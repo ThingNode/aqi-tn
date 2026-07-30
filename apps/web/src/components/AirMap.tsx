@@ -12,12 +12,13 @@ type Props={stations:MappedStation[];schools:SchoolPOI[];selected?:MapPick;userL
 
 const bandExpression:any=['step',['coalesce',['get','aqi'],0],'#8EBD96',51,'#D8DC82',101,'#FED665',151,'#FA9D45',201,'#E76E6B',301,'#9A5D7C'];
 const edgeExpression:any=['step',['coalesce',['get','aqi'],0],'#5E8C68',51,'#8E9346',101,'#A88322',151,'#B5651A',201,'#A83F3C',301,'#6B3A52'];
+const defaultMapZoom=12.6;
 const rasterFallback:StyleSpecification={
   version:8,
   sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'Map data © OpenStreetMap contributors'}},
   layers:[
     {id:'fallback-background',type:'background',paint:{'background-color':'#FEFAE0'}},
-    {id:'fallback-map',type:'raster',source:'osm',paint:{'raster-saturation':-0.65,'raster-opacity':0.72,'raster-contrast':-0.12,'raster-brightness-min':0.12}},
+    {id:'fallback-map',type:'raster',source:'osm',paint:{'raster-saturation':-0.45,'raster-opacity':0.82,'raster-contrast':-0.08}},
   ],
 };
 
@@ -33,7 +34,7 @@ function frameSelection(map:MapLibreMap,selected:MapPick|undefined,stations:Mapp
   const point=selected?.kind==='station'?stations.find(station=>station.id===selected.id):schools.find(school=>school.id===selected?.id);
   if(!point)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(userLocation)map.fitBounds([userLocation,[point.lng,point.lat]],{padding:{top:110,bottom:90,left:70,right:window.innerWidth>700?390:70},maxZoom:14,duration:reduced?0:900});
+  if(userLocation)map.fitBounds([userLocation,[point.lng,point.lat]],{padding:{top:110,bottom:90,left:70,right:window.innerWidth>700?390:70},maxZoom:defaultMapZoom,duration:reduced?0:900});
   else map.easeTo({center:[point.lng,point.lat],zoom:14,duration:reduced?0:700});
 }
 
@@ -62,7 +63,7 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
       style.sources.openmaptiles={type:'vector',tiles:[tileUrl],minzoom:0,maxzoom:14,attribution:'OpenFreeMap / OpenMapTiles / OpenStreetMap contributors'};
       if(disposed||!container.current)return;
       let activeMap:MapLibreMap;
-      try{activeMap=new maplibregl.Map({container:container.current,style,center:[79.891,6.928],zoom:11.5,pitch:reduced?0:50,bearing:reduced?0:-18,canvasContextAttributes:{antialias:true},attributionControl:false})}catch(error){setMapError(error instanceof Error?error.message:'The map could not start');return}
+      try{activeMap=new maplibregl.Map({container:container.current,style,center:[79.891,6.928],zoom:defaultMapZoom,pitch:reduced?0:50,bearing:reduced?0:-18,canvasContextAttributes:{antialias:true},attributionControl:false})}catch(error){setMapError(error instanceof Error?error.message:'The map could not start');return}
       map=activeMap;
       mapRef.current=activeMap;
       activeMap.on('error',event=>{const message=(event.error as Error|undefined)?.message;if(message&&/(webgl|style.+load|failed to initialize|networkerror)/i.test(message))setMapError(message)});
@@ -75,12 +76,10 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
       const style=activeMap.getStyle();
       for(const layer of style.layers??[]){
         try{
-          if(layer.type==='background')activeMap.setPaintProperty(layer.id,'background-color','#FCFBF7');
-          if(layer.type==='fill'&&/water/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#EDF3F1');
-          if(layer.type==='fill'&&/(park|landcover|landuse)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#F4F5EB');
-          if(layer.type==='fill'&&/(residential|industrial|commercial|pedestrian)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#F8F7F2');
-          if(layer.type==='fill'&&/building/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#FAF9F5');
-          if(layer.type==='line'&&/(road|street|highway)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'line-color',/primary|trunk/i.test(layer.id)?'#E9E5DA':'#F3F1EA');
+          if(layer.type==='background')activeMap.setPaintProperty(layer.id,'background-color','#FEFAE0');
+          if(layer.type==='fill'&&/water/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#DCE4D2');
+          if(layer.type==='fill'&&/(park|landcover|landuse)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#E9EDC9');
+          if(layer.type==='line'&&/(road|street|highway)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'line-color',/primary|trunk/i.test(layer.id)?'#E4DCC4':'#EFE7CE');
         }catch{/* style layers do not all expose the same paint properties */}
       }
       if(activeMap.getLayer('poi_transit'))activeMap.setFilter('poi_transit',['match',['get','class'],['airport','rail'],true,false]);
