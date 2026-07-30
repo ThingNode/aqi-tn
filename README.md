@@ -22,8 +22,7 @@ Requires Python 3.12 and Node 22.
 python -m pytest
 npm install
 npm run build --workspace apps/web
-uvicorn app.main:app --app-dir apps/api --reload
-npm run dev --workspace apps/web
+npm run dev
 ```
 
 The web app uses `/api/v1` and Vite proxies it to port 8000. It does not contain
@@ -31,7 +30,7 @@ mocked JSON. With no incoming station reading it shows a clearly bounded empty/d
 state while retaining the production API path.
 
 For the container stack, copy `.env.example` to `.env`, replace passwords, add the
-server-side account for `https://demo.thingsboard.cc`, and provision a ThingsBoard
+server-side account for `https://demo.thingsnode.cc`, and provision a ThingsBoard
 device access token for each station. Then run against the existing instance:
 
 ```sh
