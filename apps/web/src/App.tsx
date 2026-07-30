@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {api,connect} from './api';
 import type {Reading,Station} from './types';
 import {AirMap,type MappedStation,type MapPick,type SchoolPOI} from './components/AirMap';
-type Filter='all'|'corridor'|'school';
+type Filter='all'|'corridor';
 
 export function App(){
   const dataPage=location.pathname.replace(/\/+$/,'').endsWith('/data');
@@ -11,7 +11,7 @@ export function App(){
   const[userLocation,setUserLocation]=useState<[number,number]|undefined>(undefined),[locationState,setLocationState]=useState<'idle'|'asking'|'found'|'denied'>('idle');
   useEffect(()=>{let alive=true;api.stations().then(s=>{if(alive){setStations(s);setError(false)}}).catch(()=>alive&&setError(true));api.latest().then(r=>alive&&setReadings(Object.fromEntries(r.map(x=>[x.station_id,x])))).catch(()=>{});const disconnect=connect(r=>setReadings(v=>({...v,[r.station_id]:r})));return()=>{alive=false;disconnect()}},[retry]);
   const mapped=useMemo<MappedStation[]>(()=>stations.map(s=>({...s,pm:readings[s.id]?.measurements.pm2_5.value,aqi:readings[s.id]?.indices.sl_aqi.value})),[stations,readings]);
-  const visible=useMemo(()=>mapped.filter(s=>filter==='all'||(filter==='corridor'&&s.site_class==='TRAFFIC_CORRIDOR')||(filter==='school'&&s.site_class==='SCHOOL')),[mapped,filter]);
+  const visible=useMemo(()=>mapped.filter(s=>filter==='all'||s.site_class==='TRAFFIC_CORRIDOR'),[mapped,filter]);
   const locate=()=>{if(!navigator.geolocation){setLocationState('denied');return}setLocationState('asking');navigator.geolocation.getCurrentPosition(p=>{const point:[number,number]=[p.coords.longitude,p.coords.latitude];setUserLocation(point);setLocationState('found');const nearest=nearestStation(point,mapped);if(nearest)setSelection({kind:'station',id:nearest.id})},()=>setLocationState('denied'),{enableHighAccuracy:true,timeout:12000,maximumAge:300000})};
   const asked=useRef(false);useEffect(()=>{if(stations.length&&!asked.current){asked.current=true;locate()}},[stations.length]);
   return <div className="shell map-shell"><Nav dataActive={dataPage}/><main className="map-main">{dataPage?<DataPage stations={stations} readings={readings}/>:<MapHome stations={visible} allStations={mapped} readings={readings} selection={selection} onSelect={setSelection} filter={filter} setFilter={setFilter} windowMode={windowMode} setWindowMode={setWindowMode} userLocation={userLocation} locationState={locationState} locate={locate} error={error} retry={()=>setRetry(v=>v+1)}/>}</main></div>
@@ -26,7 +26,7 @@ function MapHome(props:{stations:MappedStation[];allStations:MappedStation[];rea
   const selectedSchool=props.selection?.kind==='school'?props.selection:undefined;
   return <section className="map-home"><AirMap stations={props.stations} selected={props.selection} onSelect={props.onSelect} userLocation={props.userLocation} windowMode={props.windowMode}/>
     <div className="map-brand"><span>aqi.</span>thingsnode</div>
-    <div className="map-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Corridor, district or station" aria-label="Search stations"/>{matches.length>0&&<div className="search-results">{matches.map(s=><button key={s.id} onClick={()=>{props.onSelect({kind:'station',id:s.id});setQuery('')}}>{s.name}<small>{s.district} · {s.site_class.replaceAll('_',' ')}</small></button>)}</div>}<div className="map-filters"><button className={props.filter==='all'?'on':''} onClick={()=>props.setFilter('all')}>All stations</button><button className={props.filter==='corridor'?'on':''} onClick={()=>props.setFilter('corridor')}>Traffic corridors</button><button className={props.filter==='school'?'on':''} onClick={()=>props.setFilter('school')}>Schools</button></div></div>
+    <div className="map-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Corridor, district or station" aria-label="Search stations"/>{matches.length>0&&<div className="search-results">{matches.map(s=><button key={s.id} onClick={()=>{props.onSelect({kind:'station',id:s.id});setQuery('')}}>{s.name}<small>{s.district} · {s.site_class.replaceAll('_',' ')}</small></button>)}</div>}<div className="map-filters"><button className={props.filter==='all'?'on':''} onClick={()=>props.setFilter('all')}>All stations</button><button className={props.filter==='corridor'?'on':''} onClick={()=>props.setFilter('corridor')}>Traffic corridors</button></div></div>
     <div className="map-top-controls"><span className="demo-pill"><i/>Demo data</span><div className="segmented">{(['24h','7d','30d'] as const).map(w=><button key={w} className={props.windowMode===w?'on':''} onClick={()=>props.setWindowMode(w)}>{w}</button>)}</div></div>
     <button className={`locate-button ${props.locationState}`} onClick={props.locate} title="Use my location" aria-label="Use my location">{props.locationState==='asking'?'…':'◎'}</button>
     {props.error&&<div className="map-error"><b>Application API unavailable</b><button onClick={props.retry}>Retry</button></div>}

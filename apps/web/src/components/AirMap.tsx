@@ -25,7 +25,9 @@ const rasterFallback:StyleSpecification={
 };
 
 function stationGeoJSON(stations:MappedStation[],mode:Props['windowMode']):FeatureCollection{
-  const multiplier=mode==='24h'?0.72:mode==='7d'?1.08:1.55;
+  // Longer windows communicate a wider accumulated exposure field.
+  // 24h inherits the former 7d footprint; 7d inherits the former 30d footprint.
+  const multiplier=mode==='24h'?1.08:mode==='7d'?1.55:1.95;
   return{type:'FeatureCollection',features:stations.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name,aqi:s.aqi??0,pm:s.pm??0,hasReading:s.pm===undefined?0:1,radius:(75+Math.min(s.pm??0,70)*2.8)*multiplier,school:s.site_class==='SCHOOL'?1:0}}))};
 }
 function normalizeCoordinate(point:[number,number]):[number,number]{
@@ -47,6 +49,7 @@ function applyDisplayOptions(map:MapLibreMap,options:MapDisplayOptions,poiFilter
   for(const layer of map.getStyle().layers??[]){
     const sourceLayer=(layer as any)['source-layer'];
     if(layer.type==='symbol'&&['aerodrome_label','housenumber','mountain_peak'].includes(sourceLayer))map.setLayoutProperty(layer.id,'visibility','none');
+    if(sourceLayer==='transportation_name'&&/(shield|route.?number|road.?number)/i.test(layer.id))map.setLayoutProperty(layer.id,'visibility','none');
     if((sourceLayer==='transportation'||sourceLayer==='transportation_name')&&/^(tunnel|highway|bridge|road)/i.test(layer.id)&&!/railway/i.test(layer.id)){
       const isMinor=/(minor|service|track|path|link|oneway|area|pier)/i.test(layer.id);
       map.setLayoutProperty(layer.id,'visibility',options.roads==='none'||(options.roads==='major'&&isMinor)?'none':'visible');

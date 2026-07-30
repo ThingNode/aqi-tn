@@ -16,6 +16,14 @@ SITE_MULTIPLIERS = {
     "TRAFFIC_CORRIDOR": 1.58, "SCHOOL": 1.05, "INDUSTRIAL": 1.72,
 }
 
+# Stable ThingsBoard device IDs used as demo visualization profiles. Keeping the
+# corrected targets in the Unhealthy SL-AQI range makes the map exercise its
+# orange band without presenting these synthetic values as observations.
+UNHEALTHY_DEMO_TARGETS = {
+    "sta-cor-baseline-borella": 82.0,
+    "sta-sch-peliyagoda": 90.0,
+}
+
 
 @dataclass(frozen=True)
 class Fault:
@@ -66,6 +74,9 @@ class SignalModel:
         washout = rng.uniform(0.40, 0.60) if rain else 1.0
         base = 15.9 * seasonal * SITE_MULTIPLIERS[station["site_class"]] * peaks * weekly * washout
         corrected_pm25 = max(0.2, base * (1 + rng.gauss(0, 0.12)))
+        if station["id"] in UNHEALTHY_DEMO_TARGETS:
+            target = UNHEALTHY_DEMO_TARGETS[station["id"]]
+            corrected_pm25 = target * (1 + rng.gauss(0, 0.025))
 
         # Placeholder hygroscopic inflation paired with the API's documented
         # inverse correction. Coefficients are not a calibration result.
@@ -93,4 +104,3 @@ class SignalModel:
             "precipitation": round(rain, 2), "battery_v": round(rng.uniform(12.1, 13.1), 2),
             "rssi": rng.randint(-83, -58), "firmware": "sim-1.0.0", "source_type": "SIMULATED",
         }
-
