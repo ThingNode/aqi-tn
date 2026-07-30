@@ -6,10 +6,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type {Station} from '../types';
 
 export type MappedStation=Station&{pm?:number;aqi?:number};
-export type SchoolPOI={id:string;name:string;lng:number;lat:number};
-export type MapPick={kind:'station';id:string}|{kind:'school';id:string};
+export type SchoolPOI={id:string;name:string;lng:number;lat:number;category?:'school'|'university'};
+export type MapPick={kind:'station';id:string}|({kind:'school'}&SchoolPOI);
 type MapDisplayOptions={schools:boolean;universities:boolean;roads:'major'|'all'|'none';places:'major'|'all'|'none'};
-type Props={stations:MappedStation[];schools:SchoolPOI[];selected?:MapPick;userLocation?:[number,number];windowMode:'24h'|'7d'|'30d';onSelect:(pick:MapPick)=>void};
+type Props={stations:MappedStation[];selected?:MapPick;userLocation?:[number,number];windowMode:'24h'|'7d'|'30d';onSelect:(pick:MapPick)=>void};
 
 const bandExpression:any=['step',['coalesce',['get','aqi'],0],'#8EBD96',51,'#D8DC82',101,'#FED665',151,'#FA9D45',201,'#E76E6B',301,'#9A5D7C'];
 const edgeExpression:any=['step',['coalesce',['get','aqi'],0],'#5E8C68',51,'#8E9346',101,'#A88322',151,'#B5651A',201,'#A83F3C',301,'#6B3A52'];
@@ -28,8 +28,6 @@ function stationGeoJSON(stations:MappedStation[],mode:Props['windowMode']):Featu
   const multiplier=mode==='24h'?0.72:mode==='7d'?1.08:1.55;
   return{type:'FeatureCollection',features:stations.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name,aqi:s.aqi??0,pm:s.pm??0,hasReading:s.pm===undefined?0:1,radius:(75+Math.min(s.pm??0,70)*2.8)*multiplier,school:s.site_class==='SCHOOL'?1:0}}))};
 }
-function schoolGeoJSON(schools:SchoolPOI[]):FeatureCollection{return{type:'FeatureCollection',features:schools.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name}}))}}
-
 function normalizeCoordinate(point:[number,number]):[number,number]{
   const longitude=((point[0]+180)%360+360)%360-180;
   return[longitude,Math.max(-85,Math.min(85,point[1]))];
@@ -46,8 +44,6 @@ function applyDisplayOptions(map:MapLibreMap,options:MapDisplayOptions,poiFilter
   const education=educationFilter(options);
   for(const[id,baseFilter]of Object.entries(poiFilters))if(map.getLayer(id))map.setFilter(id,baseFilter?['all',baseFilter,education]:education);
   if(map.getLayer('poi_transit'))map.setLayoutProperty('poi_transit','visibility','none');
-  if(map.getLayer('aqi-school-points'))map.setLayoutProperty('aqi-school-points','visibility',options.schools?'visible':'none');
-  if(map.getLayer('aqi-school-labels'))map.setLayoutProperty('aqi-school-labels','visibility',options.schools?'visible':'none');
   for(const layer of map.getStyle().layers??[]){
     const sourceLayer=(layer as any)['source-layer'];
     if(layer.type==='symbol'&&['aerodrome_label','housenumber','mountain_peak'].includes(sourceLayer))map.setLayoutProperty(layer.id,'visibility','none');
@@ -62,10 +58,22 @@ function applyDisplayOptions(map:MapLibreMap,options:MapDisplayOptions,poiFilter
   }
 }
 
-function frameSelection(map:MapLibreMap,selected:MapPick|undefined,stations:MappedStation[],schools:SchoolPOI[],userLocation:[number,number]|undefined){
+function educationPick(event:MapLayerMouseEvent):MapPick|undefined{
+  const feature=event.features?.[0];
+  if(!feature)return;
+  const geometry=feature.geometry;
+  const coordinates=geometry.type==='Point'?geometry.coordinates:event.lngLat.toArray();
+  const[lng,lat]=normalizeCoordinate([Number(coordinates[0]),Number(coordinates[1])]);
+  const properties=feature.properties??{};
+  const isUniversity=['college','university'].includes(properties.class)||['college','university'].includes(properties.subclass);
+  const name=properties['name:en']??properties.name_en??properties['name:latin']??properties.name??(isUniversity?'University':'School');
+  return{kind:'school',id:`osm-${feature.id??`${lng.toFixed(6)}-${lat.toFixed(6)}`}`,name:String(name),lng,lat,category:isUniversity?'university':'school'};
+}
+
+function frameSelection(map:MapLibreMap,selected:MapPick|undefined,stations:MappedStation[],userLocation:[number,number]|undefined){
   if(!map.getLayer('aqi-selected'))return;
   map.setFilter('aqi-selected',selected?.kind==='station'?['==',['get','id'],selected.id]:['==',['get','id'],'']);
-  const point=selected?.kind==='station'?stations.find(station=>station.id===selected.id):schools.find(school=>school.id===selected?.id);
+  const point=selected?.kind==='station'?stations.find(station=>station.id===selected.id):selected;
   if(!point)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const selectedPoint=normalizeCoordinate([point.lng,point.lat]);
@@ -77,10 +85,10 @@ function frameSelection(map:MapLibreMap,selected:MapPick|undefined,stations:Mapp
   }else map.easeTo({center:selectedPoint,zoom:14,duration:reduced?0:700});
 }
 
-export function AirMap({stations,schools,selected,userLocation,windowMode,onSelect}:Props){
+export function AirMap({stations,selected,userLocation,windowMode,onSelect}:Props){
   const[mapError,setMapError]=useState('');
   const container=useRef<HTMLDivElement>(null),mapRef=useRef<MapLibreMap|null>(null),loaded=useRef(false),locationMarker=useRef<maplibregl.Marker|null>(null);
-  const stationsRef=useRef(stations),schoolsRef=useRef(schools),windowRef=useRef(windowMode),selectedRef=useRef(selected),userLocationRef=useRef(userLocation),poiFiltersRef=useRef<Record<string,any>>({});stationsRef.current=stations;schoolsRef.current=schools;windowRef.current=windowMode;selectedRef.current=selected;userLocationRef.current=userLocation;
+  const stationsRef=useRef(stations),windowRef=useRef(windowMode),selectedRef=useRef(selected),userLocationRef=useRef(userLocation),poiFiltersRef=useRef<Record<string,any>>({});stationsRef.current=stations;windowRef.current=windowMode;selectedRef.current=selected;userLocationRef.current=userLocation;
   const selectRef=useRef(onSelect);selectRef.current=onSelect;
   useEffect(()=>{
     if(!container.current||mapRef.current)return;
@@ -129,16 +137,16 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
       activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['*',['get','radius'],0.52],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.38,0.1],'circle-blur':0.68,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-station-halo',type:'circle',source:'aqi-stations',paint:{'circle-radius':13,'circle-color':'rgba(255,255,255,0)','circle-stroke-width':3,'circle-stroke-color':edgeExpression,'circle-opacity':0.85}});
       activeMap.addLayer({id:'aqi-station-core',type:'circle',source:'aqi-stations',paint:{'circle-radius':7,'circle-color':bandExpression,'circle-stroke-width':3,'circle-stroke-color':'#FEFAE0'}});
-      activeMap.addSource('aqi-schools',{type:'geojson',data:schoolGeoJSON(schoolsRef.current)});
-      activeMap.addLayer({id:'aqi-school-points',type:'circle',source:'aqi-schools',paint:{'circle-radius':5,'circle-color':'#FEFAE0','circle-stroke-width':1.5,'circle-stroke-color':'#6E6555'}});
-      activeMap.addLayer({id:'aqi-school-labels',type:'symbol',source:'aqi-schools',minzoom:12,layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11,'text-anchor':'top','text-offset':[0,0.9],'text-max-width':10},paint:{'text-color':'#5F594F','text-halo-color':'#FEFAE0','text-halo-width':1.4}});
       activeMap.addLayer({id:'aqi-selected',type:'circle',source:'aqi-stations',filter:['==',['get','id'],''],paint:{'circle-radius':17,'circle-color':'rgba(0,0,0,0)','circle-stroke-width':2,'circle-stroke-color':'#3A342B'}});
       activeMap.on('click','aqi-station-core',(e:MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id;if(id)selectRef.current({kind:'station',id})});
-      activeMap.on('click','aqi-school-points',(e:MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id;if(id)selectRef.current({kind:'school',id})});
-      activeMap.on('click','aqi-school-labels',(e:MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id;if(id)selectRef.current({kind:'school',id})});
-      for(const id of ['aqi-station-core','aqi-school-points','aqi-school-labels']){activeMap.on('mouseenter',id,()=>activeMap.getCanvas().style.cursor='pointer');activeMap.on('mouseleave',id,()=>activeMap.getCanvas().style.cursor='')}
       applyDisplayOptions(activeMap,defaultDisplayOptions,poiFiltersRef.current);
-      frameSelection(activeMap,selectedRef.current,stationsRef.current,schoolsRef.current,userLocationRef.current);
+      for(const id of Object.keys(poiFiltersRef.current)){
+        activeMap.on('click',id,(event:MapLayerMouseEvent)=>{const pick=educationPick(event);if(pick)selectRef.current(pick)});
+        activeMap.on('mouseenter',id,()=>activeMap.getCanvas().style.cursor='pointer');
+        activeMap.on('mouseleave',id,()=>activeMap.getCanvas().style.cursor='');
+      }
+      for(const id of ['aqi-station-core']){activeMap.on('mouseenter',id,()=>activeMap.getCanvas().style.cursor='pointer');activeMap.on('mouseleave',id,()=>activeMap.getCanvas().style.cursor='')}
+      frameSelection(activeMap,selectedRef.current,stationsRef.current,userLocationRef.current);
     };
     activeMap.on('style.load',addApplicationLayers);
     fallbackTimer=window.setTimeout(()=>{if(!loaded.current&&!disposed)activeMap.setStyle(rasterFallback)},4500);
@@ -147,8 +155,7 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
     return()=>{disposed=true;if(fallbackTimer)window.clearTimeout(fallbackTimer);loaded.current=false;locationMarker.current?.remove();map?.remove();mapRef.current=null};
   },[]);
   useEffect(()=>{if(loaded.current)(mapRef.current!.getSource('aqi-stations') as GeoJSONSource)?.setData(stationGeoJSON(stations,windowMode))},[stations,windowMode]);
-  useEffect(()=>{if(loaded.current)(mapRef.current!.getSource('aqi-schools') as GeoJSONSource)?.setData(schoolGeoJSON(schools))},[schools]);
-  useEffect(()=>{if(loaded.current&&mapRef.current)frameSelection(mapRef.current,selected,stations,schools,userLocation)},[selected,userLocation,stations,schools]);
+  useEffect(()=>{if(loaded.current&&mapRef.current)frameSelection(mapRef.current,selected,stations,userLocation)},[selected,userLocation,stations]);
   useEffect(()=>{if(!userLocation||!mapRef.current)return;locationMarker.current?.remove();const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('aria-label','Your location');locationMarker.current=new maplibregl.Marker({element:el}).setLngLat(normalizeCoordinate(userLocation)).addTo(mapRef.current);},[userLocation]);
   return <><div ref={container} className="real-map" aria-label="Interactive air quality map"/>{mapError&&<div className="map-render-error" role="alert"><b>Map could not load</b><span>{mapError}</span></div>}</>;
 }
