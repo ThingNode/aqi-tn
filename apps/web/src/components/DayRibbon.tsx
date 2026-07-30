@@ -1,0 +1,3 @@
+const colour=(v:number)=>v<=25?'good':v<=50?'moderate':v<=75?'slightly':'unhealthy';
+export function DayRibbon({values}:{values:number[]}){return <section className="ribbon-card"><div className="ribbon-head"><div><div className="eyebrow">Hourly pattern</div><h3>Today</h3></div><div className="key"><i/> measured <i/> expected</div></div><div className="ribbon" aria-label="Hourly PM2.5 pattern">{values.map((v,i)=><div key={i} className={`${colour(v)} ${i>14?'expected':''}`} style={{height:`${22+v*1.6}px`}} title={`${i}:00 — ${v} µg/m³`}/>)}</div><div className="axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><p>Expected hours use outlines; measured hours use solid marks.</p></section>}
+

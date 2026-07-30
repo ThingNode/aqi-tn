@@ -1,0 +1,10 @@
+[project]
+name = "aqi-thingsnode-core"
+version = "0.1.0"
+description = "Canonical SL AQI, US AQI, and WHO guideline calculations"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

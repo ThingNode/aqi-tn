@@ -1,0 +1,73 @@
+name: aqi-thingsnode
+services:
+  timescale:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_DB: aqi
+      POSTGRES_USER: aqi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-development-only}
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+      - ../apps/api/app/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck: {test: [CMD-SHELL, "pg_isready -U aqi"], interval: 5s, timeout: 3s, retries: 20}
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes: [redis-data:/data]
+  tb-postgres:
+    image: postgres:16-alpine
+    environment: {POSTGRES_DB: thingsboard, POSTGRES_USER: thingsboard, POSTGRES_PASSWORD: "${TB_DB_PASSWORD:-development-only}"}
+    volumes: [tb-postgres-data:/var/lib/postgresql/data]
+    profiles: [local-thingsboard]
+  thingsboard:
+    image: thingsboard/tb-postgres:3.9.1
+    depends_on: [tb-postgres]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tb-postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: thingsboard
+      SPRING_DATASOURCE_PASSWORD: ${TB_DB_PASSWORD:-development-only}
+    ports: ["8080:9090", "1883:1883"]
+    volumes: [thingsboard-data:/data, thingsboard-logs:/var/log/thingsboard]
+    profiles: [local-thingsboard]
+  api:
+    build: {context: .., dockerfile: apps/api/Dockerfile}
+    depends_on: {timescale: {condition: service_healthy}, redis: {condition: service_started}}
+    environment:
+      DATA_MODE: ${DATA_MODE:-demo}
+      DATABASE_URL: postgresql+asyncpg://aqi:${POSTGRES_PASSWORD:-development-only}@timescale:5432/aqi
+      REDIS_URL: redis://redis:6379/0
+      STATION_REGISTRY: /app/config/stations.yaml
+      EXPOSURE_REFERENCE_MULTIPLIER: ${EXPOSURE_REFERENCE_MULTIPLIER:-4}
+      THINGSBOARD_BASE_URL: ${THINGSBOARD_BASE_URL:-https://demo.thingsnode.cc}
+      THINGSBOARD_WS_URL: ${THINGSBOARD_WS_URL:-wss://demo.thingsnode.cc/api/ws/plugins/telemetry}
+      THINGSBOARD_USERNAME: ${THINGSBOARD_USERNAME:-}
+      THINGSBOARD_PASSWORD: ${THINGSBOARD_PASSWORD:-}
+      THINGSBOARD_TENANT_ID: ${THINGSBOARD_TENANT_ID:-}
+  simulator:
+    build: {context: .., dockerfile: services/simulator/Dockerfile}
+    depends_on: [api]
+    env_file:
+      - path: ../.env
+        required: true
+      - path: ../thingsboard-device-tokens.env
+        required: false
+    environment:
+      MQTT_HOST: ${MQTT_HOST:-demo.thingsnode.cc}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_TLS: ${MQTT_TLS:-false}
+      MQTT_TLS_INSECURE: ${MQTT_TLS_INSECURE:-false}
+      DATA_MODE: demo
+      SIMULATION_SEED: ${SIMULATION_SEED:-42}
+      FAULT_INJECTION: ${FAULT_INJECTION:-true}
+      TB_DEVICE_TOKEN: ${TB_DEVICE_TOKEN:-}
+    profiles: [simulation]
+  web:
+    build: {context: .., dockerfile: apps/web/Dockerfile}
+    depends_on: [api]
+    ports: ["3000:80"]
+volumes:
+  timescale-data:
+  redis-data:
+  tb-postgres-data:
+  thingsboard-data:
+  thingsboard-logs:

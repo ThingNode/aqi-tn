@@ -1,0 +1,192 @@
+/* aqi.thingsnode — design tokens
+ * Matches Application-Spec v0.1 Appendix, with the additions agreed in the design plan.
+ * Additions are marked [+]. Nothing in the supplied palette has been altered.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- Platform */
+  --cornsilk:      #FEFAE0;   /* app background, map base */
+  --papaya-whip:   #FAEDCD;   /* card surfaces */
+  --beige:         #E9EDC9;   /* secondary surfaces, muted panels, footer */
+  --tea-green:     #CCD5AE;   /* borders, active states, quiet accents */
+  --light-bronze:  #D4A373;   /* primary action, emphasis, focus ring */
+
+  /* [+] Bronze darkened to clear 4.5:1 on cornsilk — for link and button TEXT only.
+   *     --light-bronze itself is a fill colour and fails as text on cream. */
+  --bronze-text:   #A9702F;
+
+  /* ------------------------------------------------------- Derived neutrals */
+  --ink:           #3A342B;   /* primary text — warm near-black */
+
+  /* [+] --ink-muted is #6E6555, not the #7A7263 first derived. #7A7263 clears
+   *     4.5:1 on cornsilk but every card in the product is papaya whip (4.09)
+   *     and the provenance panel is beige (3.95). The DARKEST surface a token
+   *     may appear on governs its value, so this is derived against --beige. */
+  --ink-muted:     #6E6555;   /* secondary text, labels — 4.8:1 on --beige */
+
+  /* [+] --ink-faint is a NON-TEXT token. At 2.25:1 on papaya whip it cannot
+   *     carry any content string — no timestamps, no coordinates, no captions.
+   *     Use it for axis ticks, disabled borders and unfilled marks only;
+   *     content that wants to recede uses --ink-muted at a smaller size. */
+  --ink-faint:     #A99F8C;   /* axis ticks, disabled marks — never text */
+  --hairline:      #E4DCC4;   /* 1px dividers, unfilled ticks */
+  --shadow-warm:   rgba(90, 74, 48, 0.10);
+
+  /* -------------------------------------------------- AQI scale — DATA ONLY */
+  /* Never on buttons, navigation, links or any interface chrome. */
+  --aqi-good:               #8EBD96;   /*   0– 50  Good               */
+  --aqi-moderate:           #D8DC82;   /*  51–100  Moderate           */
+  --aqi-slightly-unhealthy: #FED665;   /* 101–150  Slightly Unhealthy */
+  --aqi-unhealthy:          #FA9D45;   /* 151–200  Unhealthy          */
+  --aqi-very-unhealthy:     #E76E6B;   /* 201–300  Very Unhealthy     */
+  --aqi-hazardous:          #9A5D7C;   /* 301–500  Hazardous          */
+
+  /* [+] Band edges. Each is its own hue driven toward --ink until the mark
+   *     clears 3:1 against --papaya-whip. Every band-coloured data mark
+   *     (ribbon bar, tick, chart fill, legend swatch, column cap) carries a
+   *     1px edge in its matching token. The two pale bands are invisible
+   *     without this; applying it to all six keeps the rule unconditional. */
+  --aqi-good-edge:               #5E8C68;
+  --aqi-moderate-edge:           #8E9346;
+  --aqi-slightly-unhealthy-edge: #A88322;
+  --aqi-unhealthy-edge:          #B5651A;
+  --aqi-very-unhealthy-edge:     #A83F3C;
+  --aqi-hazardous-edge:          #6B3A52;
+
+  /* [+] Column body fill opacity, and the alpha ceiling for overlapping
+   *     columns. Depth-sorted alpha compositing — never additive. */
+  --column-opacity: 0.55;
+  --column-cap-opacity: 0.9;
+  --air-blob-opacity: 0.18;
+
+  /* ------------------------------------------------------------------- Type */
+  --font-primary: 'Nunito', system-ui, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  --font-si:      'Noto Sans Sinhala', sans-serif;
+  --font-ta:      'Noto Sans Tamil', sans-serif;
+
+  /* [+] Weight floor. Nunito's variable axis runs 200–1000; this system
+   *     exposes 400 and above only. 400 is running text; every label, value
+   *     and heading is 600+. The light end is where a rounded face on a cream
+   *     palette stops reading as an instrument. */
+  --weight-body:    400;
+  --weight-medium:  500;
+  --weight-label:   600;
+  --weight-heading: 700;
+  --weight-display: 800;
+
+  /* Type scale — size / line-height / weight */
+  --display-xl:      800 72px/68px var(--font-primary);   /* primary AQI number */
+  --display-l:       700 40px/46px var(--font-primary);   /* screen titles */
+  --display-m:       700 28px/36px var(--font-primary);   /* card headings */
+  --body-l:          400 17px/27px var(--font-primary);   /* primary reading text */
+  --body-m:          400 15px/24px var(--font-primary);   /* default body */
+  --body-s:          400 13px/20px var(--font-primary);   /* secondary */
+  --label:           600 12px/16px var(--font-primary);   /* + letter-spacing .06em, uppercase */
+  --data-l:          700 24px/30px var(--font-primary);   /* secondary readings */
+  --data-m:          500 15px/22px var(--font-primary);   /* values in tables */
+  --data-s:          400 12px/16px var(--font-primary);   /* units, timestamps, axes */
+
+  /* [+] 12px is the FLOOR of this scale — there is no smaller step, and none
+   *     may be introduced. The three-script proof found 12px already marginal
+   *     for Sinhala at label size (diacritics collide, counters close up),
+   *     which is why Sinhala labels take the 0.03em/20px exception. Anything
+   *     below 12px fails outright in two of the three shipping scripts, so
+   *     nav labels, chips and axis ticks all sit at 12px. */
+
+  --label-tracking:  0.06em;
+  --wordmark-tracking: -0.02em;
+
+  /* [+] Per-script line-height additions. Sinhala +4px at every step,
+   *     Tamil +2px. Noto sits one weight step below the Nunito it adjoins. */
+  --script-leading-si: 4px;
+  --script-leading-ta: 2px;
+
+  /* ------------------------------------------------------------------ Space */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 24px;  --space-6: 32px;  --space-7: 48px;  --space-8: 64px;
+
+  /* ----------------------------------------------------------------- Radius */
+  --radius-s: 8px;      /* chips, inputs */
+  --radius-m: 14px;     /* cards */
+  --radius-l: 22px;     /* sheets, primary panels */
+  --radius-full: 999px;
+
+  /* -------------------------------------------------------------- Elevation */
+  --elev-1: 0 1px 2px rgba(90,74,48,0.06), 0 2px 8px rgba(90,74,48,0.05);
+  --elev-2: 0 2px 4px rgba(90,74,48,0.07), 0 8px 24px rgba(90,74,48,0.08);
+  --elev-3: 0 4px 8px rgba(90,74,48,0.08), 0 16px 48px rgba(90,74,48,0.10);
+
+  /* [+] Column cast shadow on the model surface. Achromatic, and the element
+   *     doing the work of keeping this design from drifting soft. */
+  --column-cast: rgba(90,74,48,0.22);
+
+  /* ----------------------------------------------------------------- Motion */
+  --dur-card:   320ms;  --ease-card:   cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-column: 700ms;  --ease-column: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-map:   1200ms;
+  --dur-value:  400ms;  --ease-value:  ease-out;
+  --dur-hover:  160ms;  --ease-hover:  ease-out;
+  --stagger-column: 40ms;
+
+  /* ------------------------------------------------------------------ Focus */
+  --focus-ring: 2px solid var(--light-bronze);
+  --focus-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ Numerals
+ * Mandatory on every number that updates, aligns or sits on an axis. */
+.numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* -------------------------------------------------------------------- Focus */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* ------------------------------------------------------------------ Scripts */
+:lang(si) { font-family: var(--font-si); }
+:lang(ta) { font-family: var(--font-ta); }
+
+/* --------------------------------------------------------------- Thresholds
+ * Not CSS, but they belong with the tokens because the interface depends on
+ * them and they must be published on the methodology page.
+ *
+ *   WHO_PM25_24H              = 15.0 µg/m³
+ *   WHO_PM25_ANNUAL           =  5.0 µg/m³
+ *   WHO_PM10_24H              = 45.0 µg/m³
+ *   WHO_PM10_ANNUAL           = 15.0 µg/m³
+ *
+ *   SL_AQI_PM25(v)            = round(2 × v)
+ *   SL_AQI_PM10(v)            = round(v)
+ *
+ *   [+] EXPOSURE_REFERENCE_DOSE = 4 × WHO_PM25_24H × window_hours
+ *       Field extent e = clamp(cumulative / reference_dose, 0.15, 1.0)
+ *       Sets the extent of the atmospheric field on the map and the full scale
+ *       of the exposure bar on station detail, so the WHO mark sits at a
+ *       constant 25% of the scale in both — a datum comparable across the
+ *       network. Columns, their height clamp and the notched cap are withdrawn.
+ *
+ *   [+] PLAIN_SENTENCE_ON      = 30.0 µg/m³   (appears at or above)
+ *   [+] PLAIN_SENTENCE_OFF     = 28.0 µg/m³   (withdraws only below)
+ *       Once shown, persists for the remainder of the calendar day.
+ *
+ *   [+] COLUMN_CLUSTER_ZOOM    = 12.5   below this, co-corridor stations
+ *                                       merge into one column at corridor mean
+ */
+
+/* -------------------------------------------------------- Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-card: 0ms; --dur-column: 0ms; --dur-map: 0ms;
+    --dur-value: 0ms; --dur-hover: 0ms; --stagger-column: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

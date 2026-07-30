@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+thingsboard-device-tokens.env
+*.log
+.DS_Store
+
+# Local planning inputs and design references. These remain in the development
+# workspace but are intentionally excluded from the public source repository.
+/AQI ThingsNode Design Direction/
+/ui-reference/
+/documents/external/

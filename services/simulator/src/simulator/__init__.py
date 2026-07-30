@@ -1,0 +1,2 @@
+"""Standalone simulated station service."""
+

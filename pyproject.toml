@@ -1,0 +1,12 @@
+[project]
+name = "aqi-thingsnode"
+version = "0.1.0"
+description = "Open-source air-quality platform for Sri Lanka"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+[tool.pytest.ini_options]
+pythonpath = ["packages/aqi-core/src", "packages/schemas/src", "services/simulator/src", "apps/api"]
+testpaths = ["packages/aqi-core/tests", "services/simulator/tests", "apps/api/tests"]
+addopts = "-q"
+asyncio_default_fixture_loop_scope = "function"

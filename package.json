@@ -1,0 +1,8 @@
+{
+  "name": "aqi-thingsnode",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {"dev": "npm --workspace apps/web run dev", "build": "npm --workspaces run build --if-present", "test": "python -m pytest"},
+  "workspaces": ["apps/web", "apps/site"]
+}
+
