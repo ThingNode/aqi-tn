@@ -17,13 +17,13 @@ const rasterFallback:StyleSpecification={
   sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'Map data © OpenStreetMap contributors'}},
   layers:[
     {id:'fallback-background',type:'background',paint:{'background-color':'#FEFAE0'}},
-    {id:'fallback-map',type:'raster',source:'osm',paint:{'raster-saturation':-0.45,'raster-opacity':0.82,'raster-contrast':-0.08}},
+    {id:'fallback-map',type:'raster',source:'osm',paint:{'raster-saturation':-0.65,'raster-opacity':0.72,'raster-contrast':-0.12,'raster-brightness-min':0.12}},
   ],
 };
 
 function stationGeoJSON(stations:MappedStation[],mode:Props['windowMode']):FeatureCollection{
   const multiplier=mode==='24h'?0.72:mode==='7d'?1.08:1.55;
-  return{type:'FeatureCollection',features:stations.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name,aqi:s.aqi??0,pm:s.pm??0,hasReading:s.pm===undefined?0:1,radius:(20+Math.min(s.pm??0,70)*1.15)*multiplier,school:s.site_class==='SCHOOL'?1:0}}))};
+  return{type:'FeatureCollection',features:stations.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name,aqi:s.aqi??0,pm:s.pm??0,hasReading:s.pm===undefined?0:1,radius:(75+Math.min(s.pm??0,70)*2.8)*multiplier,school:s.site_class==='SCHOOL'?1:0}}))};
 }
 function schoolGeoJSON(schools:SchoolPOI[]):FeatureCollection{return{type:'FeatureCollection',features:schools.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name}}))}}
 
@@ -75,16 +75,20 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
       const style=activeMap.getStyle();
       for(const layer of style.layers??[]){
         try{
-          if(layer.type==='background')activeMap.setPaintProperty(layer.id,'background-color','#FEFAE0');
-          if(layer.type==='fill'&&/water/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#DCE4D2');
-          if(layer.type==='fill'&&/(park|landcover|landuse)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#E9EDC9');
-          if(layer.type==='line'&&/(road|street|highway)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'line-color',/primary|trunk/i.test(layer.id)?'#E4DCC4':'#EFE7CE');
+          if(layer.type==='background')activeMap.setPaintProperty(layer.id,'background-color','#FCFBF7');
+          if(layer.type==='fill'&&/water/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#EDF3F1');
+          if(layer.type==='fill'&&/(park|landcover|landuse)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#F4F5EB');
+          if(layer.type==='fill'&&/(residential|industrial|commercial|pedestrian)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#F8F7F2');
+          if(layer.type==='fill'&&/building/i.test(layer.id))activeMap.setPaintProperty(layer.id,'fill-color','#FAF9F5');
+          if(layer.type==='line'&&/(road|street|highway)/i.test(layer.id))activeMap.setPaintProperty(layer.id,'line-color',/primary|trunk/i.test(layer.id)?'#E9E5DA':'#F3F1EA');
         }catch{/* style layers do not all expose the same paint properties */}
       }
+      if(activeMap.getLayer('poi_transit'))activeMap.setFilter('poi_transit',['match',['get','class'],['airport','rail'],true,false]);
       const firstLabel=(style.layers??[]).find((l:any)=>l.type==='symbol'&&l.layout?.['text-field'])?.id;
       if(style.sources.openmaptiles)activeMap.addLayer({id:'aqi-3d-buildings',source:'openmaptiles','source-layer':'building',type:'fill-extrusion',minzoom:14,filter:['!=',['get','hide_3d'],true],paint:{'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],0],0,'#FEFAE0',60,'#F2EBD2',200,'#E4DCC4'],'fill-extrusion-height':['interpolate',['linear'],['zoom'],14,0,15.5,['coalesce',['get','render_height'],0]],'fill-extrusion-base':['case',['>=',['zoom'],16],['coalesce',['get','render_min_height'],0],0],'fill-extrusion-opacity':0.92}},firstLabel);
       activeMap.addSource('aqi-stations',{type:'geojson',data:stationGeoJSON(stationsRef.current,windowRef.current)});
-      activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.24,0.08],'circle-blur':0.82,'circle-pitch-alignment':'map'}});
+      activeMap.addLayer({id:'aqi-field-outer',type:'circle',source:'aqi-stations',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.28,0.08],'circle-blur':0.72,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
+      activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['*',['get','radius'],0.52],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.38,0.1],'circle-blur':0.68,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-station-halo',type:'circle',source:'aqi-stations',paint:{'circle-radius':13,'circle-color':'rgba(255,255,255,0)','circle-stroke-width':3,'circle-stroke-color':edgeExpression,'circle-opacity':0.85}});
       activeMap.addLayer({id:'aqi-station-core',type:'circle',source:'aqi-stations',paint:{'circle-radius':7,'circle-color':bandExpression,'circle-stroke-width':3,'circle-stroke-color':'#FEFAE0'}});
       activeMap.addSource('aqi-schools',{type:'geojson',data:schoolGeoJSON(schoolsRef.current)});
