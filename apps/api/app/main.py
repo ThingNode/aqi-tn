@@ -1,4 +1,7 @@
 import asyncio
+import csv
+import io
+import json
 import os
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -7,8 +10,9 @@ from pathlib import Path
 from uuid import uuid4
 
 import yaml
-from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from aqi_core import sl_aqi, us_aqi_pm25, who_pm25_status
 from aqi_schemas import CanonicalReading, Measurement, Provenance, Station
@@ -136,6 +140,24 @@ def history(station_id: str, from_: datetime | None = Query(None, alias="from"),
 @app.get("/api/v1/meta/bands")
 def bands():
     return {"who_pm25_24h": 15.0, "exposure_reference_multiplier": EXPOSURE_REFERENCE_MULTIPLIER, "rh_model": PLACEHOLDER_MODEL_VERSION}
+
+
+@app.get("/api/v1/export")
+def export_readings(stations_query: str = Query(default="", alias="stations"), format: str = "csv"):
+    selected_ids = set(stations_query.split(",")) if stations_query else set(station_by_id)
+    readings = [reading for station_id, items in store.by_station.items() if station_id in selected_ids for reading in items]
+    readings.sort(key=lambda item: item.timestamp_utc)
+    if format == "json":
+        payload = json.dumps([reading.model_dump(mode="json") for reading in readings])
+        return Response(payload, media_type="application/json", headers={"Content-Disposition": "attachment; filename=aqi-thingsnode-readings.json"})
+    if format != "csv":
+        raise HTTPException(status_code=400, detail="format must be csv or json")
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(["timestamp_utc", "station_id", "pm2_5_ug_m3", "pm10_ug_m3", "sl_aqi", "sl_aqi_band", "source_type", "calibration_state", "confidence"])
+    for reading in readings:
+        writer.writerow([reading.timestamp_utc.isoformat(), reading.station_id, reading.measurements["pm2_5"].value, reading.measurements["pm10"].value, reading.indices["sl_aqi"]["value"], reading.indices["sl_aqi"]["band"], reading.provenance.source_type, reading.provenance.calibration_state, reading.provenance.confidence])
+    return Response(output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=aqi-thingsnode-readings.csv"})
 
 
 @app.websocket("/api/v1/ws")

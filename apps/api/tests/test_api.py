@@ -17,3 +17,14 @@ def test_canonicalization_preserves_raw_and_attaches_provenance():
     assert reading.provenance.source_type == "SIMULATED"
     assert "sl_aqi" in reading.indices
 
+
+def test_export_returns_a_real_csv_contract():
+    response = TestClient(app).get("/api/v1/export?format=csv")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert response.text.startswith("timestamp_utc,station_id,pm2_5_ug_m3")
+
+
+def test_export_rejects_unknown_format():
+    response = TestClient(app).get("/api/v1/export?format=xml")
+    assert response.status_code == 400
