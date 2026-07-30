@@ -28,14 +28,24 @@ function stationGeoJSON(stations:MappedStation[],mode:Props['windowMode']):Featu
 }
 function schoolGeoJSON(schools:SchoolPOI[]):FeatureCollection{return{type:'FeatureCollection',features:schools.map(s=>({type:'Feature',id:s.id,geometry:{type:'Point',coordinates:[s.lng,s.lat]},properties:{id:s.id,name:s.name}}))}}
 
+function normalizeCoordinate(point:[number,number]):[number,number]{
+  const longitude=((point[0]+180)%360+360)%360-180;
+  return[longitude,Math.max(-85,Math.min(85,point[1]))];
+}
+
 function frameSelection(map:MapLibreMap,selected:MapPick|undefined,stations:MappedStation[],schools:SchoolPOI[],userLocation:[number,number]|undefined){
   if(!map.getLayer('aqi-selected'))return;
   map.setFilter('aqi-selected',selected?.kind==='station'?['==',['get','id'],selected.id]:['==',['get','id'],'']);
   const point=selected?.kind==='station'?stations.find(station=>station.id===selected.id):schools.find(school=>school.id===selected?.id);
   if(!point)return;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(userLocation)map.fitBounds([userLocation,[point.lng,point.lat]],{padding:{top:110,bottom:90,left:70,right:window.innerWidth>700?390:70},maxZoom:defaultMapZoom,duration:reduced?0:900});
-  else map.easeTo({center:[point.lng,point.lat],zoom:14,duration:reduced?0:700});
+  const selectedPoint=normalizeCoordinate([point.lng,point.lat]);
+  if(userLocation){
+    const locationPoint=normalizeCoordinate(userLocation);
+    const bounds=new maplibregl.LngLatBounds(locationPoint,locationPoint);
+    bounds.extend(selectedPoint);
+    map.fitBounds(bounds,{padding:{top:110,bottom:90,left:70,right:window.innerWidth>700?390:70},maxZoom:defaultMapZoom,duration:reduced?0:900});
+  }else map.easeTo({center:selectedPoint,zoom:14,duration:reduced?0:700});
 }
 
 export function AirMap({stations,schools,selected,userLocation,windowMode,onSelect}:Props){
@@ -63,7 +73,7 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
       style.sources.openmaptiles={type:'vector',tiles:[tileUrl],minzoom:0,maxzoom:14,attribution:'OpenFreeMap / OpenMapTiles / OpenStreetMap contributors'};
       if(disposed||!container.current)return;
       let activeMap:MapLibreMap;
-      try{activeMap=new maplibregl.Map({container:container.current,style,center:[79.891,6.928],zoom:defaultMapZoom,pitch:reduced?0:50,bearing:reduced?0:-18,canvasContextAttributes:{antialias:true},attributionControl:false})}catch(error){setMapError(error instanceof Error?error.message:'The map could not start');return}
+      try{activeMap=new maplibregl.Map({container:container.current,style,center:[79.891,6.928],zoom:defaultMapZoom,pitch:reduced?0:50,bearing:reduced?0:-18,renderWorldCopies:false,canvasContextAttributes:{antialias:true},attributionControl:false})}catch(error){setMapError(error instanceof Error?error.message:'The map could not start');return}
       map=activeMap;
       mapRef.current=activeMap;
       activeMap.on('error',event=>{const message=(event.error as Error|undefined)?.message;if(message&&/(webgl|style.+load|failed to initialize|networkerror)/i.test(message))setMapError(message)});
@@ -107,6 +117,6 @@ export function AirMap({stations,schools,selected,userLocation,windowMode,onSele
   useEffect(()=>{if(loaded.current)(mapRef.current!.getSource('aqi-stations') as GeoJSONSource)?.setData(stationGeoJSON(stations,windowMode))},[stations,windowMode]);
   useEffect(()=>{if(loaded.current)(mapRef.current!.getSource('aqi-schools') as GeoJSONSource)?.setData(schoolGeoJSON(schools))},[schools]);
   useEffect(()=>{if(loaded.current&&mapRef.current)frameSelection(mapRef.current,selected,stations,schools,userLocation)},[selected,userLocation,stations,schools]);
-  useEffect(()=>{if(!userLocation||!mapRef.current)return;locationMarker.current?.remove();const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('aria-label','Your location');locationMarker.current=new maplibregl.Marker({element:el}).setLngLat(userLocation).addTo(mapRef.current);},[userLocation]);
+  useEffect(()=>{if(!userLocation||!mapRef.current)return;locationMarker.current?.remove();const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('aria-label','Your location');locationMarker.current=new maplibregl.Marker({element:el}).setLngLat(normalizeCoordinate(userLocation)).addTo(mapRef.current);},[userLocation]);
   return <><div ref={container} className="real-map" aria-label="Interactive air quality map"/>{mapError&&<div className="map-render-error" role="alert"><b>Map could not load</b><span>{mapError}</span></div>}</>;
 }
