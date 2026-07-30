@@ -22,4 +22,6 @@ def load_env() -> None:
 if __name__ == "__main__":
     import uvicorn
     load_env()
-    uvicorn.run("app.main:app", app_dir=str(ROOT / "apps/api"), host="127.0.0.1", port=8000, reload=True)
+    port = int(os.getenv("API_DEV_PORT", "8010"))
+    reload_enabled = os.getenv("API_RELOAD", "true").lower() == "true"
+    uvicorn.run("app.main:app", app_dir=str(ROOT / "apps/api"), host="127.0.0.1", port=port, reload=reload_enabled)

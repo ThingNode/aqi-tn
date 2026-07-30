@@ -25,6 +25,10 @@ npm run build --workspace apps/web
 npm run dev
 ```
 
+The local API listens on `http://127.0.0.1:8020`; Vite proxies `/api` and the
+application WebSocket to it. Port 8020 avoids development-tool services commonly
+bound to port 8000.
+
 The web app uses `/api/v1` and Vite proxies it to port 8000. It does not contain
 mocked JSON. With no incoming station reading it shows a clearly bounded empty/demo
 state while retaining the production API path.
