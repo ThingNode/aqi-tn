@@ -20,3 +20,5 @@
 .air-animation-overlay{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;contain:strict}.air-animation-overlay svg{position:absolute;inset:0;display:block;overflow:visible}.air-sensor-breathe{transform-box:fill-box;transform-origin:center;animation:coreBreathe var(--breathe) ease-in-out infinite;will-change:transform,opacity}
 @keyframes coreBreathe{0%,100%{transform:scale(1);opacity:.72}50%{transform:scale(1.16);opacity:1}}
 @media(prefers-reduced-motion:reduce){.air-sensor-breathe{animation:none!important}}
+.locate-button{left:256px;right:auto;top:auto;bottom:20px}
+@media(max-width:700px){.locate-button{left:10px;right:auto;top:auto;bottom:10px}}
