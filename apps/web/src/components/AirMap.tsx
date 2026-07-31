@@ -232,18 +232,18 @@ export function AirMap({stations,selected,userLocation,windowMode,onSelect}:Prop
         }catch{/* style layers do not all expose the same paint properties */}
       }
       const firstLabel=(style.layers??[]).find((l:any)=>l.type==='symbol'&&l.layout?.['text-field'])?.id;
-      const firstRoad=(style.layers??[]).find((layer:any)=>layer['source-layer']==='transportation')?.id??firstLabel;
       activeMap.addSource('aqi-stations',{type:'geojson',data:stationGeoJSON(stationsRef.current,windowRef.current)});
       activeMap.addSource('aqi-plumes',{type:'geojson',data:plumeGeoJSON(activeMap,stationsRef.current,windowRef.current,0)});
-      // Air colour sits above land/water fills but below the first road layer,
-      // keeping every road casing, line and label crisp over the moving field.
-      activeMap.addLayer({id:'aqi-field-outer',type:'circle',source:'aqi-stations',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.14,0.05],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstRoad);
-      activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['*',['get','radius'],0.52],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.2,0.07],'circle-blur':0.72,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstRoad);
-      activeMap.addLayer({id:'aqi-plume-outer',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.72],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstRoad);
-      activeMap.addLayer({id:'aqi-plume-inner',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['*',['get','radius'],0.58],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.48],'circle-blur':0.62,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstRoad);
+      activeMap.addLayer({id:'aqi-field-outer',type:'circle',source:'aqi-stations',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.14,0.05],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
+      activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['*',['get','radius'],0.52],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.2,0.07],'circle-blur':0.72,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
+      activeMap.addLayer({id:'aqi-plume-outer',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.72],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
+      activeMap.addLayer({id:'aqi-plume-inner',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['*',['get','radius'],0.58],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.48],'circle-blur':0.62,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-station-core',type:'circle',source:'aqi-stations',paint:{'circle-radius':7,'circle-color':bandExpression,'circle-stroke-width':3,'circle-stroke-color':'#FEFAE0'}});
       activeMap.on('click','aqi-station-core',(e:MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id;if(id)selectRef.current({kind:'station',id})});
       applyDisplayOptions(activeMap,defaultDisplayOptions,poiFiltersRef.current);
+      // Keep the solid sensor core above every map and plume layer. The soft
+      // breathing halo is the separate DOM overlay immediately above the map.
+      activeMap.moveLayer('aqi-station-core');
       for(const id of Object.keys(poiFiltersRef.current)){
         activeMap.on('click',id,(event:MapLayerMouseEvent)=>{const pick=educationPick(event);if(pick)selectRef.current(pick)});
         activeMap.on('mouseenter',id,()=>activeMap.getCanvas().style.cursor='pointer');
