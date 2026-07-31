@@ -37,12 +37,13 @@ def test_raw_value_includes_humidity_inflation():
     assert reading["pm10_raw"] > reading["pm2_5_raw"]
 
 
-def test_two_demo_hotspots_stay_in_unhealthy_visualization_range():
+def test_demo_profiles_cover_moderate_and_unhealthy_visualization_ranges():
     at = datetime(2026, 8, 1, 2, 30, tzinfo=timezone.utc)
     model = SignalModel(42, False)
-    for station_id in ("sta-cor-baseline-borella", "sta-sch-peliyagoda"):
-        reading = model.generate({"id": station_id, "site_class": "TRAFFIC_CORRIDOR"}, at)
-        assert 75.5 <= corrected_pm25(reading) <= 100
+    borella = model.generate({"id": "sta-cor-baseline-borella", "site_class": "TRAFFIC_CORRIDOR"}, at)
+    orugodawatta = model.generate({"id": "sta-sch-peliyagoda", "site_class": "TRAFFIC_CORRIDOR"}, at)
+    assert 25.5 <= corrected_pm25(borella) <= 50
+    assert 75.5 <= corrected_pm25(orugodawatta) <= 100
 
 
 def test_wind_is_coherent_across_nearby_stations():

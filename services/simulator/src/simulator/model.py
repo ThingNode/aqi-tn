@@ -16,11 +16,11 @@ SITE_MULTIPLIERS = {
     "TRAFFIC_CORRIDOR": 1.58, "SCHOOL": 1.05, "INDUSTRIAL": 1.72,
 }
 
-# Stable ThingsBoard device IDs used as demo visualization profiles. Keeping the
-# corrected targets in the Unhealthy SL-AQI range makes the map exercise its
-# orange band without presenting these synthetic values as observations.
-UNHEALTHY_DEMO_TARGETS = {
-    "sta-cor-baseline-borella": 82.0,
+# Stable ThingsBoard device IDs used as demo visualization profiles. The targets
+# exercise both Moderate and Unhealthy SL-AQI bands without presenting these
+# synthetic values as observations.
+DEMO_PM25_TARGETS = {
+    "sta-cor-baseline-borella": 38.0,
     "sta-sch-peliyagoda": 90.0,
 }
 
@@ -105,8 +105,8 @@ class SignalModel:
         wind_speed, wind_direction = self._wind(station["id"], local, rain)
         base = 15.9 * seasonal * SITE_MULTIPLIERS[station["site_class"]] * peaks * weekly * washout
         corrected_pm25 = max(0.2, base * (1 + rng.gauss(0, 0.12)))
-        if station["id"] in UNHEALTHY_DEMO_TARGETS:
-            target = UNHEALTHY_DEMO_TARGETS[station["id"]]
+        if station["id"] in DEMO_PM25_TARGETS:
+            target = DEMO_PM25_TARGETS[station["id"]]
             corrected_pm25 = target * (1 + rng.gauss(0, 0.025))
 
         # Placeholder hygroscopic inflation paired with the API's documented
