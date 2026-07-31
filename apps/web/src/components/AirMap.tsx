@@ -4,11 +4,18 @@ import type {GeoJSONSource,Map as MapLibreMap,MapLayerMouseEvent,StyleSpecificat
 import type {FeatureCollection} from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type {Station} from '../types';
+import beachIconUrl from '../../../../ui-reference/icons/beach.png';
+import hospitalIconUrl from '../../../../ui-reference/icons/hospital.png';
+import hotelIconUrl from '../../../../ui-reference/icons/hotel.png';
+import parkIconUrl from '../../../../ui-reference/icons/park.png';
+import schoolIconUrl from '../../../../ui-reference/icons/school.png';
+import universityIconUrl from '../../../../ui-reference/icons/university.png';
 
 export type MappedStation=Station&{pm?:number;aqi?:number;windSpeed?:number;windDirection?:number};
-export type SchoolPOI={id:string;name:string;lng:number;lat:number;category?:'school'|'university'};
-export type MapPick={kind:'station';id:string}|({kind:'school'}&SchoolPOI);
-type MapDisplayOptions={schools:boolean;universities:boolean;roads:'major'|'all'|'none';places:'major'|'all'|'none'};
+export type POICategory='school'|'university'|'hospital'|'hotel'|'park'|'beach';
+export type MapPOI={id:string;name:string;lng:number;lat:number;category:POICategory};
+export type MapPick={kind:'station';id:string}|({kind:'poi'}&MapPOI);
+type MapDisplayOptions={roads:'major'|'all'|'none';places:'major'|'all'|'none'};
 type Props={stations:MappedStation[];selected?:MapPick;userLocation?:[number,number];locationFocus:number;windowMode:'24h'|'7d'|'30d';onSelect:(pick:MapPick)=>void};
 
 const bandExpression:any=['step',['coalesce',['get','aqi'],0],'#8EBD96',51,'#D8DC82',101,'#FED665',151,'#FA9D45',201,'#E76E6B',301,'#9A5D7C'];
@@ -21,7 +28,15 @@ const fieldBands=[
   {max:Infinity,fill:'#9A5D7C'},
 ];
 const defaultMapZoom=12.6;
-const defaultDisplayOptions:MapDisplayOptions={schools:true,universities:true,roads:'major',places:'major'};
+const defaultDisplayOptions:MapDisplayOptions={roads:'major',places:'major'};
+const poiIcons:Record<POICategory,{url:string;colour:string}>={
+  school:{url:schoolIconUrl,colour:'#A9702F'},
+  university:{url:universityIconUrl,colour:'#A9702F'},
+  hospital:{url:hospitalIconUrl,colour:'#6E6555'},
+  hotel:{url:hotelIconUrl,colour:'#6E6555'},
+  park:{url:parkIconUrl,colour:'#66744E'},
+  beach:{url:beachIconUrl,colour:'#66744E'},
+};
 const rasterFallback:StyleSpecification={
   version:8,
   sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'Map data © OpenStreetMap contributors'}},
@@ -46,16 +61,64 @@ function normalizeCoordinate(point:[number,number]):[number,number]{
   return[longitude,Math.max(-85,Math.min(85,point[1]))];
 }
 
-function educationFilter(options:MapDisplayOptions):any{
-  const categories:any[]=[];
-  if(options.schools)categories.push(['==',['get','class'],'school']);
-  if(options.universities)categories.push(['any',['match',['get','class'],['college','university'],true,false],['match',['get','subclass'],['college','university'],true,false]]);
-  return categories.length===0?['==',['get','class'],'__hidden__']:categories.length===1?categories[0]:['any',...categories];
+const poiCategoryTests:Record<POICategory,any>={
+  university:['any',['match',['get','class'],['college','university'],true,false],['match',['get','subclass'],['college','university'],true,false]],
+  school:['==',['get','class'],'school'],
+  hospital:['any',['==',['get','class'],'hospital'],['match',['get','subclass'],['hospital','clinic'],true,false]],
+  hotel:['any',['==',['get','class'],'lodging'],['match',['get','subclass'],['hotel','motel','hostel','guest_house'],true,false]],
+  park:['any',['==',['get','class'],'park'],['match',['get','subclass'],['park','garden','nature_reserve'],true,false]],
+  beach:['any',['==',['get','class'],'beach'],['==',['get','subclass'],'beach']],
+};
+
+function supportedPoiFilter(categories:POICategory[]):any{
+  const tests=categories.map(category=>poiCategoryTests[category]);
+  return['all',['match',['geometry-type'],['Point','MultiPoint'],true,false],tests.length===1?tests[0]:['any',...tests]];
+}
+
+function rankedPoiFilter(categories:POICategory[],minimum:number,maximum?:number):any{
+  const rank=['coalesce',['get','rank'],1];
+  return['all',supportedPoiFilter(categories),['>=',rank,minimum],...(maximum===undefined?[]:[['<=',rank,maximum]])];
+}
+
+function poiIconExpression(categories:POICategory[]):any{
+  const expression:any[]=['case'];
+  for(const category of categories)expression.push(poiCategoryTests[category],`aqi-poi-${category}`);
+  expression.push('');
+  return expression;
+}
+
+function taggedPoiCategory(properties:Record<string,any>):POICategory|undefined{
+  const primary=String(properties.class??''),secondary=String(properties.subclass??'');
+  if(['college','university'].includes(primary)||['college','university'].includes(secondary))return'university';
+  if(primary==='school')return'school';
+  if(primary==='hospital'||['hospital','clinic'].includes(secondary))return'hospital';
+  if(primary==='lodging'||['hotel','motel','hostel','guest_house'].includes(secondary))return'hotel';
+  if(primary==='park'||['park','garden','nature_reserve'].includes(secondary))return'park';
+  if(primary==='beach'||secondary==='beach')return'beach';
+}
+
+async function addThemedPoiIcons(map:MapLibreMap){
+  await Promise.all(Object.entries(poiIcons).map(async([category,definition])=>{
+    const name=`aqi-poi-${category}`;
+    if(map.hasImage(name))return;
+    const response=await map.loadImage(definition.url);
+    const source=response.data;
+    const tint=document.createElement('canvas');tint.width=64;tint.height=64;
+    const tintContext=tint.getContext('2d',{willReadFrequently:true});
+    if(!tintContext)return;
+    tintContext.drawImage(source,0,0,64,64);
+    tintContext.globalCompositeOperation='source-in';tintContext.fillStyle=definition.colour;tintContext.fillRect(0,0,64,64);
+    const marker=document.createElement('canvas');marker.width=80;marker.height=80;
+    const context=marker.getContext('2d',{willReadFrequently:true});
+    if(!context)return;
+    context.beginPath();context.arc(40,40,35,0,Math.PI*2);context.fillStyle='#FEFAE0';context.fill();context.lineWidth=3;context.strokeStyle='#CCD5AE';context.stroke();
+    context.drawImage(tint,20,20,40,40);
+    map.addImage(name,context.getImageData(0,0,80,80),{pixelRatio:2});
+  }));
 }
 
 function applyDisplayOptions(map:MapLibreMap,options:MapDisplayOptions,poiFilters:Record<string,any>){
-  const education=educationFilter(options);
-  for(const[id,baseFilter]of Object.entries(poiFilters))if(map.getLayer(id))map.setFilter(id,baseFilter?['all',baseFilter,education]:education);
+  for(const id of Object.keys(poiFilters))if(map.getLayer(id))map.setLayoutProperty(id,'visibility','none');
   if(map.getLayer('poi_transit'))map.setLayoutProperty('poi_transit','visibility','none');
   for(const layer of map.getStyle().layers??[]){
     const sourceLayer=(layer as any)['source-layer'];
@@ -72,16 +135,18 @@ function applyDisplayOptions(map:MapLibreMap,options:MapDisplayOptions,poiFilter
   }
 }
 
-function educationPick(event:MapLayerMouseEvent):MapPick|undefined{
+function poiPick(event:MapLayerMouseEvent):MapPick|undefined{
   const feature=event.features?.[0];
   if(!feature)return;
   const geometry=feature.geometry;
   const coordinates=geometry.type==='Point'?geometry.coordinates:event.lngLat.toArray();
   const[lng,lat]=normalizeCoordinate([Number(coordinates[0]),Number(coordinates[1])]);
   const properties=feature.properties??{};
-  const isUniversity=['college','university'].includes(properties.class)||['college','university'].includes(properties.subclass);
-  const name=properties['name:en']??properties.name_en??properties['name:latin']??properties.name??(isUniversity?'University':'School');
-  return{kind:'school',id:`osm-${feature.id??`${lng.toFixed(6)}-${lat.toFixed(6)}`}`,name:String(name),lng,lat,category:isUniversity?'university':'school'};
+  const category=taggedPoiCategory(properties);
+  if(!category)return;
+  const fallback=category[0].toUpperCase()+category.slice(1);
+  const name=properties['name:en']??properties.name_en??properties['name:latin']??properties.name??fallback;
+  return{kind:'poi',id:`osm-${feature.id??`${lng.toFixed(6)}-${lat.toFixed(6)}`}`,name:String(name),lng,lat,category};
 }
 
 const svgNamespace='http://www.w3.org/2000/svg';
@@ -232,7 +297,7 @@ export function AirMap({stations,selected,userLocation,locationFocus,windowMode,
       activeMap.on('error',event=>{const message=(event.error as Error|undefined)?.message;if(message&&/(webgl|style.+load|failed to initialize|networkerror)/i.test(message))setMapError(message)});
     activeMap.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
     activeMap.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-    const addApplicationLayers=()=>{
+    const addApplicationLayers=async()=>{
       if(loaded.current)return;
       loaded.current=true;
       if(fallbackTimer)window.clearTimeout(fallbackTimer);
@@ -247,20 +312,31 @@ export function AirMap({stations,selected,userLocation,locationFocus,windowMode,
         }catch{/* style layers do not all expose the same paint properties */}
       }
       const firstLabel=(style.layers??[]).find((l:any)=>l.type==='symbol'&&l.layout?.['text-field'])?.id;
+      try{await addThemedPoiIcons(activeMap)}catch(error){console.warn('Place icons could not be loaded',error)}
+      if(disposed)return;
       activeMap.addSource('aqi-stations',{type:'geojson',data:stationGeoJSON(stationsRef.current,windowRef.current)});
       activeMap.addSource('aqi-plumes',{type:'geojson',data:plumeGeoJSON(activeMap,stationsRef.current,windowRef.current,0)});
       activeMap.addLayer({id:'aqi-field-outer',type:'circle',source:'aqi-stations',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.14,0.05],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-field',type:'circle',source:'aqi-stations',paint:{'circle-radius':['*',['get','radius'],0.52],'circle-color':bandExpression,'circle-opacity':['case',['==',['get','hasReading'],1],0.2,0.07],'circle-blur':0.72,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-plume-outer',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['get','radius'],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.72],'circle-blur':0.78,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
       activeMap.addLayer({id:'aqi-plume-inner',type:'circle',source:'aqi-plumes',paint:{'circle-radius':['*',['get','radius'],0.58],'circle-color':bandExpression,'circle-opacity':['*',['get','opacity'],0.48],'circle-blur':0.62,'circle-pitch-alignment':'map','circle-pitch-scale':'map'}},firstLabel);
+      // OpenMapTiles exposes the original OpenStreetMap class/subclass tags in
+      // its POI layer. Rank keeps the overview quiet; local POIs join at z16.
+      const essentialCategories:POICategory[]=['school','university','hospital'];
+      const contextCategories:POICategory[]=['hotel','park','beach'];
+      const allPoiCategories:POICategory[]=[...essentialCategories,...contextCategories];
+      const poiLayout=(categories:POICategory[])=>({'icon-image':poiIconExpression(categories),'icon-size':['interpolate',['linear'],['zoom'],14,.72,17,.9],'icon-allow-overlap':false,'icon-ignore-placement':false,'icon-padding':8,'symbol-sort-key':['coalesce',['get','rank'],99]});
+      activeMap.addLayer({id:'aqi-poi-essential',type:'symbol',source:'openmaptiles','source-layer':'poi',minzoom:14,filter:rankedPoiFilter(essentialCategories,1,5),layout:poiLayout(essentialCategories)} as any,firstLabel);
+      activeMap.addLayer({id:'aqi-poi-context',type:'symbol',source:'openmaptiles','source-layer':'poi',minzoom:14,filter:rankedPoiFilter(contextCategories,1,5),layout:poiLayout(contextCategories)} as any,firstLabel);
+      activeMap.addLayer({id:'aqi-poi-local',type:'symbol',source:'openmaptiles','source-layer':'poi',minzoom:16,filter:rankedPoiFilter(allPoiCategories,6),layout:poiLayout(allPoiCategories)} as any,firstLabel);
       activeMap.addLayer({id:'aqi-station-core',type:'circle',source:'aqi-stations',paint:{'circle-radius':7,'circle-color':bandExpression,'circle-stroke-width':3,'circle-stroke-color':'#FEFAE0'}});
       activeMap.on('click','aqi-station-core',(e:MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id;if(id)selectRef.current({kind:'station',id})});
       applyDisplayOptions(activeMap,defaultDisplayOptions,poiFiltersRef.current);
       // Keep the solid sensor core above every map and plume layer. The soft
       // breathing halo is the separate DOM overlay immediately above the map.
       activeMap.moveLayer('aqi-station-core');
-      for(const id of Object.keys(poiFiltersRef.current)){
-        activeMap.on('click',id,(event:MapLayerMouseEvent)=>{const pick=educationPick(event);if(pick)selectRef.current(pick)});
+      for(const id of ['aqi-poi-essential','aqi-poi-context','aqi-poi-local']){
+        activeMap.on('click',id,(event:MapLayerMouseEvent)=>{const pick=poiPick(event);if(pick)selectRef.current(pick)});
         activeMap.on('mouseenter',id,()=>activeMap.getCanvas().style.cursor='pointer');
         activeMap.on('mouseleave',id,()=>activeMap.getCanvas().style.cursor='');
       }
@@ -281,7 +357,7 @@ export function AirMap({stations,selected,userLocation,locationFocus,windowMode,
       frameSelection(activeMap,selectedRef.current,stationsRef.current);
       if(userLocationRef.current){locationMarker.current=placeUserMarker(activeMap,userLocationRef.current,locationMarker.current);if(locationFocusRef.current>0)focusUserLocation(activeMap,userLocationRef.current)}
     };
-    activeMap.on('style.load',addApplicationLayers);
+    activeMap.on('style.load',()=>{void addApplicationLayers()});
     fallbackTimer=window.setTimeout(()=>{if(!loaded.current&&!disposed)activeMap.setStyle(rasterFallback)},4500);
     };
     void start().catch(error=>{if(!disposed)setMapError(error instanceof Error?error.message:'The map could not start')});
