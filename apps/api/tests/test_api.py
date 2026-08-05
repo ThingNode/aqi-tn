@@ -18,6 +18,12 @@ def test_canonicalization_preserves_raw_and_attaches_provenance():
     assert "sl_aqi" in reading.indices
 
 
+def test_canonicalization_defaults_missing_source_type_to_own_sensor():
+    reading = canonicalize("sta-cor-hlr-nugegoda", datetime.now(timezone.utc), {"pm1": 8, "pm2_5_raw": 20, "pm10_raw": 35, "humidity": 80})
+    assert reading.provenance.source_type == "OWN_SENSOR"
+    assert reading.provenance.source_name == "ThingsNode station"
+
+
 def test_export_returns_a_real_csv_contract():
     response = TestClient(app).get("/api/v1/export?format=csv")
     assert response.status_code == 200

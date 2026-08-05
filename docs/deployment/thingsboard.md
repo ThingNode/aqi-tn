@@ -1,3 +1,16 @@
+## Live status
+
+All 15 registry stations are commissioned and publishing real telemetry to
+this instance. `DATA_MODE=live` is the production setting. The simulator
+(`services/simulator`) publishes to the same per-station device tokens real
+hardware now uses, so it must never be run against this instance again — it
+would interleave synthetic and real readings under the same devices with no
+way to separate them afterward. It refuses to start when `DATA_MODE=live`
+unless `FORCE_SIMULATION=true` is set explicitly, and is retained only for
+local development without hardware, pointed at a non-production tenant. Do
+not pass `--profile simulation` when running `docker compose` against this
+instance.
+
 # Existing ThingsBoard setup
 
 Target instance: `https://demo.thingsnode.cc`. The initially supplied

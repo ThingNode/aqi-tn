@@ -4,12 +4,12 @@ import type {GeoJSONSource,Map as MapLibreMap,MapLayerMouseEvent,StyleSpecificat
 import type {FeatureCollection} from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type {Station} from '../types';
-import beachIconUrl from '../../../../ui-reference/icons/beach.png';
-import hospitalIconUrl from '../../../../ui-reference/icons/hospital.png';
-import hotelIconUrl from '../../../../ui-reference/icons/hotel.png';
-import parkIconUrl from '../../../../ui-reference/icons/park.png';
-import schoolIconUrl from '../../../../ui-reference/icons/school.png';
-import universityIconUrl from '../../../../ui-reference/icons/university.png';
+import beachIconUrl from '../assets/icons/beach.png';
+import hospitalIconUrl from '../assets/icons/hospital.png';
+import hotelIconUrl from '../assets/icons/hotel.png';
+import parkIconUrl from '../assets/icons/park.png';
+import schoolIconUrl from '../assets/icons/school.png';
+import universityIconUrl from '../assets/icons/university.png';
 
 export type MappedStation=Station&{pm?:number;aqi?:number;windSpeed?:number;windDirection?:number};
 export type POICategory='school'|'university'|'hospital'|'hotel'|'park'|'beach';

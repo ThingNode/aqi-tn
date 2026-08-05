@@ -16,6 +16,15 @@ def load_stations(path: str) -> list[dict]:
 def main() -> None:
     from paho.mqtt import client as mqtt
 
+    if os.getenv("DATA_MODE", "demo").lower() == "live" and os.getenv("FORCE_SIMULATION", "false").lower() != "true":
+        raise SystemExit(
+            "Refusing to start: DATA_MODE=live means real stations are publishing to these "
+            "same device tokens. Running the simulator now would interleave synthetic and "
+            "real readings under the same devices with no way to tell them apart downstream. "
+            "Set FORCE_SIMULATION=true only if you have deliberately pointed this at a "
+            "non-production ThingsBoard tenant."
+        )
+
     registry = os.getenv("STATION_REGISTRY", "/app/config/stations.yaml")
     host = os.getenv("MQTT_HOST", "thingsboard")
     port = int(os.getenv("MQTT_PORT", "1883"))

@@ -1,7 +1,10 @@
 # aqi.thingsnode
 
-An open-source, child-health-focused air-quality platform for Sri Lanka. The MVP is
-designed to run in honest demo mode until physical stations are commissioned.
+An open-source, child-health-focused air-quality platform for Sri Lanka. All 15
+registry stations are commissioned and publishing live telemetry; the platform
+runs in `DATA_MODE=live`. The simulator remains available for local development
+without hardware but must never be pointed at the production ThingsBoard
+instance — see `docs/deployment/thingsboard.md`.
 
 ## Repository
 
@@ -38,16 +41,23 @@ server-side account for `https://demo.thingsnode.cc`, and provision a ThingsBoar
 device access token for each station. Then run against the existing instance:
 
 ```sh
-docker compose -f infra/docker-compose.yml --profile simulation up --build
+docker compose -f infra/docker-compose.yml up --build
 ```
 
 Open `http://localhost:3000/app/`. To run an isolated local ThingsBoard instead, add
 `--profile local-thingsboard` and change the ThingsBoard/MQTT hosts in `.env`.
 
-The ThingsBoard account needs permission to list/read the 15 demo devices and
+**Do not add `--profile simulation` against this instance.** The 15 stations are
+commissioned and live; the simulator publishes to the same per-station device
+tokens and would interleave synthetic and real readings under the same devices.
+It's retained only for local development without hardware, against a
+non-production tenant — see `docs/deployment/thingsboard.md`.
+
+The ThingsBoard account needs permission to list/read the 15 devices and
 subscribe to their latest telemetry. It does not need system-administrator access.
 
 ## Licensing
 
 Code is Apache 2.0. Published project-generated datasets are intended for CC BY 4.0;
 third-party source data retains its original terms and attribution requirements.
+See `docs/data-protection-statement.md` for what data is (and is not) collected.

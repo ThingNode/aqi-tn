@@ -85,7 +85,7 @@ def canonicalize(station_id: str, ts: datetime, values: dict) -> CanonicalReadin
         measurements={"pm1": Measurement(value=values.get("pm1", 0), unit="ug/m3"), "pm2_5": Measurement(value=pm25, unit="ug/m3"), "pm10": Measurement(value=pm10, unit="ug/m3")},
         meteorology={"temperature_c": values.get("temperature"), "humidity_pct": humidity, "pressure_hpa": values.get("pressure"), "wind_speed_ms": values.get("wind_speed"), "wind_direction_deg": values.get("wind_direction"), "precipitation_mm": values.get("precipitation")},
         indices={"sl_aqi": {"value": sl.value, "band": sl.band, "dominant": sl.dominant, "validated": sl.validated}, "us_aqi": {"value": us.value, "band": us.band, "dominant": us.dominant}, "who_24h": who_pm25_status(pm25)},
-        provenance=Provenance(source_type=values.get("source_type", "SIMULATED"), source_name="Simulation Service v1" if values.get("source_type") == "SIMULATED" else "ThingsNode station", calibration_state="RH_CORRECTED", confidence="LOW", aggregation="INSTANT"),
+        provenance=Provenance(source_type=values.get("source_type", "OWN_SENSOR"), source_name="Simulation Service v1" if values.get("source_type") == "SIMULATED" else "ThingsNode station", calibration_state="RH_CORRECTED", confidence="LOW", aggregation="INSTANT"),
         raw={"pm2_5_raw": pm25_raw, "pm10_raw": pm10_raw, "humidity": humidity},
     )
 
