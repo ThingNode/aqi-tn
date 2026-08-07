@@ -1,0 +1,96 @@
+/* Placeholder landing page. Reuses the palette from apps/web/src/styles/tokens.css
+ * (duplicated, not imported — the two apps deploy independently). */
+
+:root {
+  --cornsilk: #FEFAE0;
+  --light-bronze: #D4A373;
+  --bronze-text: #A9702F;
+  --ink: #3A342B;
+  --ink-muted: #6E6555;
+  --hairline: #E4DCC4;
+  --radius-full: 999px;
+  --font-primary: 'Nunito', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cornsilk);
+  color: var(--ink);
+  font: 400 17px/1.6 var(--font-primary);
+}
+
+.bar {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.wordmark {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 18px;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  width: 100%;
+}
+
+h1 {
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.15;
+  margin: 0 0 20px;
+}
+
+.lede {
+  color: var(--ink-muted);
+  font-size: 17px;
+  margin: 0 0 32px;
+  max-width: 46ch;
+}
+
+.ctas {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--light-bronze);
+  color: var(--cornsilk);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: var(--radius-full);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.96);
+}
+
+.foot {
+  padding: 24px 32px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--hairline);
+}
+
+.foot p {
+  margin: 0;
+}
+
+@media (min-width: 720px) {
+  h1 { font-size: 56px; }
+}

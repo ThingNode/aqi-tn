@@ -16,3 +16,6 @@ thingsboard-device-tokens.env
 /AQI ThingsNode Design Direction/
 /ui-reference/
 /documents/external/
+
+.vercel
+.env*

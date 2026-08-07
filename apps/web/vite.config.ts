@@ -1,3 +1,4 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-export default defineConfig({plugins:[react()],base:'/app/',server:{proxy:{'/api':{target:'http://127.0.0.1:8020',ws:true}}}});
+import { microfrontends } from '@vercel/microfrontends/experimental/vite';
+export default defineConfig({plugins:[react(),microfrontends()],base:'/app/',server:{proxy:{'/api':{target:'http://127.0.0.1:8020',ws:true}}}});

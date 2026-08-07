@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "applications": {
+    "aqi-tn-site": {
+      "packageName": "@aqi-thingsnode/site",
+      "development": {
+        "fallback": "aqi-tn-site.vercel.app",
+        "local": 3000
+      }
+    },
+    "aqi-tn-web": {
+      "packageName": "@aqi-thingsnode/web",
+      "development": {
+        "fallback": "aqi-tn-web.vercel.app",
+        "local": 5173
+      },
+      "routing": [
+        {
+          "paths": ["/app/:path*"]
+        }
+      ]
+    }
+  }
+}
