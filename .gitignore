@@ -19,3 +19,6 @@ thingsboard-device-tokens.env
 
 .vercel
 .env*
+
+# Local design-tooling cache and critique output.
+.impeccable/

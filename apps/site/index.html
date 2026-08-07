@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>aqi.thingsnode — the air over Sri Lanka, measured and open</title>
+    <title>Breathe Safe</title>
     <meta
       name="description"
-      content="An open air-quality network for Sri Lanka. Readings from traffic corridors and school gates across Colombo, with the Sri Lanka index and the WHO guideline reported side by side."
+      content="Breathe Safe Sri Lanka — an open air-quality network measuring PM2.5, CO2 and NOx/VOC on Colombo's traffic corridors and inside its school grounds, and linking that exposure to children's respiratory health."
     />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/images/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,23 +19,12 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <!-- Torn-paper edge filter. Displaces the element's alpha with fractal
-         noise, so framed images tear rather than crop to a rectangle. -->
-    <svg class="filter-defs" aria-hidden="true" focusable="false">
-      <defs>
-        <filter id="torn">
-          <feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="4" seed="7" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="26" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-        <filter id="torn-soft">
-          <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="19" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </defs>
-    </svg>
-
     <header class="bar">
-      <a class="wordmark" href="/"><span>aqi.</span>thingsnode</a>
+      <a class="wordmark" href="/"
+        ><img src="/images/logo.png" alt="" width="28" height="28" /><span
+          >aqi.</span
+        >thingsnode</a
+      >
       <nav class="nav" aria-label="Primary">
         <a href="/app/">Live map</a>
         <a href="#schools">For schools</a>
@@ -45,29 +36,25 @@
     <main>
       <!-- ─────────────────────────────────────────────────────────── Hero -->
       <section class="hero">
-        <figure class="hero-figure">
-          <div class="torn">
-            <picture>
-              <source srcset="/images/hero.webp" type="image/webp" />
-              <img
-                src="/images/hero.png"
-                alt="A traffic corridor in Colombo at the morning school run, seen through haze."
-                width="1672"
-                height="941"
-                fetchpriority="high"
-              />
-            </picture>
-          </div>
-        </figure>
+        <picture class="hero-bg">
+          <source srcset="/images/full_hero.webp" type="image/webp" />
+          <img
+            src="/images/full_hero.png"
+            alt="A child on a hillside above a hazy valley of traffic and chimney smoke, facing a break of daylight between two mountains."
+            width="1672"
+            height="941"
+            fetchpriority="high"
+          />
+        </picture>
 
         <div class="hero-copy">
           <p class="eyebrow">Breathe Safe Sri Lanka</p>
-          <h1>The air children<br />breathe, measured<br />and open.</h1>
-          <p class="lede">
-            Sensor stations on Colombo's busiest corridors and inside its school
-            gates. The Sri Lanka index and the WHO guideline, always reported
-            together.
-          </p>
+          <!-- The line break is hidden under 860px, so the whitespace around it
+               is what keeps the words apart once the h1 wraps on its own. -->
+          <h1>
+            The air children breathe,<br />
+            measured and open.
+          </h1>
           <div class="ctas">
             <a class="btn btn-primary" href="/app/">Open the live map</a>
             <a class="btn btn-quiet" href="#schools">For schools</a>
@@ -77,31 +64,73 @@
 
       <!-- ────────────────────────────────────────────────────────── Stats -->
       <section class="stats" aria-labelledby="stats-h">
-        <h2 id="stats-h" class="section-h">Why the second number exists</h2>
+        <h2 id="stats-h" class="section-h">Why this is being measured</h2>
         <div class="stat-row">
           <div class="stat">
-            <strong class="numeric">93<span class="unit">%</span></strong>
-            <p>of days read <em>Good</em> on the national index</p>
+            <strong class="numeric">350,000</strong>
+            <p>
+              school children travel and study beside the Colombo district
+              corridors being instrumented
+            </p>
           </div>
           <div class="stat">
-            <strong class="numeric">57<span class="unit">%</span></strong>
-            <p>of those same days exceed WHO 24-hour guidance</p>
+            <strong class="numeric">10-15<span class="unit">%</span></strong>
+            <p>
+              asthma prevalence among urban Sri Lankan schoolchildren, with
+              <em>wheeze tracking corridor exposure</em>
+            </p>
           </div>
           <div class="stat">
-            <strong class="numeric">3.2<span class="unit">×</span></strong>
-            <p>the WHO annual guideline on a monitored corridor</p>
+            <strong class="numeric">+4.67<span class="unit">%</span></strong>
+            <p>
+              paediatric asthma admissions for every <em>10 µg/m³</em> of PM2.5,
+              in Sri Lanka's own hospital data
+            </p>
           </div>
         </div>
         <p class="footnote">
-          Derived from published CEA distributions for Colombo. Every threshold
-          and index formula is published on the method page.
+          Prevalence and admission figures come from published Sri Lankan school
+          and hospital studies. The exposure count is the school population along
+          the five corridors in scope.
         </p>
       </section>
 
+      <!-- ────────────────────────────────────────────────────── Corridors -->
+      <section class="split" id="corridors">
+        <figure class="frame frame-corridor">
+          <div class="media">
+            <picture>
+              <source srcset="/images/hero.webp" type="image/webp" />
+              <img
+                src="/images/hero.png"
+                alt="A Colombo traffic corridor at the morning school run: children in white uniforms on the verge beside stalled traffic and exhaust haze."
+                width="1672"
+                height="941"
+                loading="lazy"
+              />
+            </picture>
+          </div>
+        </figure>
+        <div class="split-copy">
+          <p class="eyebrow">The corridors</p>
+          <h2>Measured where the walk to school happens.</h2>
+          <p>
+            The Colombo district puts Sri Lanka's heaviest traffic corridors and
+            its densest school populations on the same streets. Almost none of
+            that exposure is measured at the point where a child meets it.
+          </p>
+          <ul class="ticks">
+            <li>Fifteen corridor stations funded and scheduled for deployment</li>
+            <li>Fifteen more on the same five highest-emission corridors</li>
+            <li>Evidence aimed at the vehicle emission standards, Gazette 1738/37</li>
+          </ul>
+        </div>
+      </section>
+
       <!-- ──────────────────────────────────────────────────────── Network -->
-      <section class="split" id="network">
+      <section class="split reverse" id="network">
         <figure class="frame">
-          <div class="torn torn-soft">
+          <div class="media">
             <picture>
               <source srcset="/images/network.webp" type="image/webp" />
               <img
@@ -116,17 +145,24 @@
         </figure>
         <div class="split-copy">
           <p class="eyebrow">The network</p>
-          <h2>Forty-five stations,<br />where children actually are.</h2>
+          <h2>Forty-five stations,<br />one open instrument.</h2>
           <p>
-            Fifteen on traffic corridors today, expanding to thirty corridor
-            units and fifteen inside school grounds — each validated on rotation
-            against reference-grade equipment.
+            Thirty new stations join the fifteen already funded — fifteen more on
+            the corridors, fifteen inside school grounds. Every site runs the
+            same open-hardware monitor, so a reading from one is comparable to a
+            reading from any other.
           </p>
-          <ul class="ticks">
-            <li>PM2.5, CO<sub>2</sub> and NOx/VOC index</li>
-            <li>Five-minute resolution, published calibration record</li>
-            <li>Public feeds ingested and attributed, never blended</li>
-          </ul>
+          <ol class="states">
+            <li><span>Stations</span><b class="numeric">45</b></li>
+            <li><span>Monitor</span><b>AirGradient Open Air</b></li>
+            <li><span>Measured</span><b>PM2.5, CO<sub>2</sub>, NOx/VOC</b></li>
+            <li><span>Validation</span><b>CEA reference-grade BAM</b></li>
+            <li><span>Link</span><b>4G, buffered on device</b></li>
+          </ol>
+          <p class="footnote">
+            The same monitor behind UNICEF's school air quality network in
+            Lao PDR.
+          </p>
         </div>
       </section>
 
@@ -141,15 +177,12 @@
           <li><i style="--b: var(--aqi-very-unhealthy); --e: var(--aqi-very-unhealthy-edge)"></i><b>Very unhealthy</b><span class="numeric">201–300</span></li>
           <li><i style="--b: var(--aqi-hazardous); --e: var(--aqi-hazardous-edge)"></i><b>Hazardous</b><span class="numeric">301–500</span></li>
         </ol>
-        <p class="footnote">
-          Band colour appears only on data, and never without its band name.
-        </p>
       </section>
 
       <!-- ──────────────────────────────────────────────────────── Schools -->
-      <section class="split reverse" id="schools">
+      <section class="split" id="schools">
         <figure class="frame">
-          <div class="torn torn-soft">
+          <div class="media">
             <picture>
               <source srcset="/images/school.webp" type="image/webp" />
               <img
@@ -163,23 +196,21 @@
           </div>
         </figure>
         <div class="split-copy">
-          <p class="eyebrow">For schools · free, permanently</p>
-          <h2>One sentence,<br />each morning.</h2>
+          <p class="eyebrow">For schools</p>
+          <h2>Fifteen of them go<br />inside the gate.</h2>
           <p>
-            Register your hours and your nearest station. Each morning you get
-            the day's advisory in Sinhala, Tamil and English — with the number
-            it came from, so you can forward it and defend it.
+            Playground and classroom air, not only the road outside. Siting runs
+            through Magicbit, Thingsnode's sister company, already working with
+            these schools on STEM education — so what is missing is the
+            instrument, not the relationship.
           </p>
-          <ol class="states">
-            <li><span>Normal outdoor activity</span><b class="numeric">up to 15</b></li>
-            <li><span>Normal, with a note</span><b class="numeric">15 – 30</b></li>
-            <li><span>Limit outdoor activity</span><b class="numeric">30 – 55</b></li>
-            <li><span>Move activities indoors</span><b class="numeric">55 – 90</b></li>
-            <li><span>Keep children indoors</span><b class="numeric">above 90</b></li>
-          </ol>
+          <ul class="ticks">
+            <li>An alert to the school when levels cross WHO guidance</li>
+            <li>Read alongside partner doctors and health officials</li>
+            <li>No cost to the school, during the grant and after it</li>
+          </ul>
           <p class="footnote">
-            School-day mean PM2.5, µg/m³. Population-level guidance, not medical
-            advice.
+            Guidance is population-level and not medical advice.
           </p>
         </div>
       </section>
@@ -187,7 +218,7 @@
       <!-- ────────────────────────────────────────────── Health / research -->
       <section class="wide" id="health">
         <figure class="frame frame-wide">
-          <div class="torn">
+          <div class="media">
             <picture>
               <source srcset="/images/health.webp" type="image/webp" />
               <img
@@ -204,11 +235,22 @@
           <p class="eyebrow">The question underneath</p>
           <h2>Does the corridor outside change the child inside?</h2>
           <p>
-            Exposure at the school gate, cross-referenced against aggregate
-            paediatric respiratory admissions — the first study of its kind in
-            South Asia. Ward-level and anonymised: no record about any child,
-            ever.
+            A cross-referencing engine reads corridor and classroom pollutant
+            data against paediatric respiratory admissions, and returns a risk
+            index specific to one school and the road beside it. As far as we can
+            establish, no study in South Asia has joined corridor and classroom
+            exposure to children's respiratory outcomes at this scale.
           </p>
+          <p>
+            The admissions side is aggregate and anonymised: no record about any
+            child, ever.
+          </p>
+          <ol class="states">
+            <li><span>Thirty new stations deployed</span><b>Month 3–4</b></li>
+            <li><span>First validated risk index published</span><b>Month 6</b></li>
+            <li><span>Threshold workshop with regulator, health and university partners</span><b>Month 9</b></li>
+            <li><span>Twelve-month open dataset and validation report</span><b>Month 12</b></li>
+          </ol>
         </div>
       </section>
 
@@ -219,7 +261,7 @@
           <article>
             <p class="eyebrow">Code</p>
             <h3>Apache 2.0</h3>
-            <p>Ingestors, index library and this front end.</p>
+            <p>Front end, index library, ingestors and the backend fork.</p>
           </article>
           <article>
             <p class="eyebrow">Data</p>
@@ -228,8 +270,8 @@
           </article>
           <article>
             <p class="eyebrow">Hardware</p>
-            <h3>Open BOM</h3>
-            <p>Build your own and we will ingest it.</p>
+            <h3>Open Air</h3>
+            <p>AirGradient's open-source monitor at all forty-five sites.</p>
           </article>
           <article>
             <p class="eyebrow">API</p>
@@ -245,7 +287,11 @@ GET /api/v1/export?format=csv</code></pre>
 
     <footer class="foot">
       <div class="foot-top">
-        <a class="wordmark" href="/"><span>aqi.</span>thingsnode</a>
+        <a class="wordmark" href="/"
+          ><img src="/images/logo.png" alt="" width="28" height="28" /><span
+            >aqi.</span
+          >thingsnode</a
+        >
         <p>An open air-quality network for Sri Lanka.</p>
       </div>
       <nav class="foot-links" aria-label="Footer">
@@ -254,9 +300,12 @@ GET /api/v1/export?format=csv</code></pre>
         <a href="https://github.com/ThingNode/aqi-tn">GitHub</a>
       </nav>
       <p class="foot-fine">
+        Breathe Safe Sri Lanka, built in Colombo by Thingsnode (Pvt) Ltd.
         Ingests CEA, NBRO, WAQI and aqi.in feeds, attributed at the station.
         Guidance is population-level and not medical advice.
       </p>
     </footer>
+
+    <script type="module" src="/src/header.js"></script>
   </body>
 </html>

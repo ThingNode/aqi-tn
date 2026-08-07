@@ -58,6 +58,14 @@
   --elev-2: 0 2px 4px rgba(90, 74, 48, 0.07), 0 8px 24px rgba(90, 74, 48, 0.08);
   --elev-3: 0 4px 8px rgba(90, 74, 48, 0.08), 0 16px 48px rgba(90, 74, 48, 0.1);
 
+  /* Hero — the only place on the page where type sits on a photograph.
+     Ink inverts, and the accent lifts off --light-bronze so it still clears
+     4.5:1 where the scrim is at its thinnest. */
+  --hero-ink: #ffffff;
+  --hero-ink-muted: rgba(255, 255, 255, 0.84);
+  --hero-accent: #e3b489;
+  --scrim: 12, 17, 26;
+
   --dur-hover: 160ms;
   --ease-hover: ease-out;
   --measure: 60ch;
@@ -78,19 +86,6 @@ body {
   color: var(--ink);
   font: 400 17px/1.62 var(--font-primary);
   -webkit-font-smoothing: antialiased;
-
-  /* The faint plotting grid behind everything, per the reference frames.
-     Kept under 3% alpha so it reads as paper, not as a chart. */
-  background-image: linear-gradient(rgba(169, 159, 140, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(169, 159, 140, 0.16) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-.filter-defs {
-  position: absolute;
-  width: 0;
-  height: 0;
-  pointer-events: none;
 }
 
 .numeric {
@@ -111,26 +106,88 @@ img {
 
 /* ─────────────────────────────────────────────────────────────── Header */
 
+/* Fixed rather than sticky: it floats over the full-bleed hero, and
+   .is-solid (set from header.js once the hero is past) returns it to cream. */
 .bar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
   display: flex;
   align-items: center;
   gap: var(--space-6);
   padding: var(--space-4) var(--space-6);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background var(--dur-hover) var(--ease-hover),
+    border-color var(--dur-hover) var(--ease-hover);
+}
+
+.bar.is-solid {
   background: rgba(254, 250, 224, 0.88);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--hairline);
+  border-bottom-color: var(--hairline);
+}
+
+/* Over the photograph the bar carries its own type colours. */
+.bar .wordmark {
+  color: var(--hero-ink);
+}
+
+.bar .wordmark span {
+  color: var(--hero-accent);
+}
+
+.bar .nav a {
+  color: var(--hero-ink-muted);
+}
+
+.bar .nav a:hover {
+  color: var(--hero-ink);
+}
+
+.bar.is-solid .wordmark {
+  color: var(--ink);
+}
+
+.bar.is-solid .wordmark span {
+  color: var(--bronze-text);
+}
+
+.bar.is-solid .nav a {
+  color: var(--ink-muted);
+}
+
+.bar.is-solid .nav a:hover {
+  color: var(--ink);
+}
+
+/* Anchored sections would otherwise land under the fixed bar. */
+section[id] {
+  scroll-margin-top: 80px;
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
   font-weight: 800;
   font-size: 19px;
   letter-spacing: -0.02em;
   color: var(--ink);
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* The flame reads as a cap-height mark, so it is sized against the type rather
+ * than left at its intrinsic 292px. The lockup gap is the image's own margin,
+ * not the flex gap: "aqi." and "thingsnode" are two anonymous flex items, and a
+ * gap would push them apart as well. */
+.wordmark img {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  display: block;
 }
 
 .wordmark span {
@@ -194,24 +251,19 @@ img {
   font-size: 14px;
 }
 
-/* ───────────────────────────────────────────────── Torn-paper image frame */
+/* ────────────────────────────────────────────────────────── Image frame */
 
-/* The displacement filter eats into the element's bounds, so the padding
-   here is what stops the torn edge being clipped by its own box. */
-.torn {
-  filter: url(#torn);
-  padding: 14px;
+.media {
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  box-shadow: var(--elev-2);
 }
 
-.torn-soft {
-  filter: url(#torn-soft);
-}
-
-.torn picture {
+.media picture {
   display: block;
 }
 
-.torn img {
+.media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -220,35 +272,96 @@ img {
   min-height: 220px;
 }
 
-/* Safari/older engines that drop SVG filters still get a clean frame. */
-@supports not (filter: url(#torn)) {
-  .torn {
-    filter: none;
-    border-radius: var(--radius-m);
-    overflow: hidden;
-    box-shadow: var(--elev-2);
-  }
-}
-
 /* ───────────────────────────────────────────────────────────────── Hero */
 
+/* Full-bleed and exactly one viewport tall. svh, not vh, so the mobile URL
+   bar collapsing does not crop the copy. */
 .hero {
-  max-width: var(--page);
-  margin: 0 auto;
-  padding: var(--space-7) var(--space-6) var(--space-8);
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  /* The uneven padding is what sits the block above the optical centre; the
+     top figure still clears the fixed bar on a short viewport. */
+  padding: calc(var(--space-8) + var(--space-4)) var(--space-6)
+    calc(var(--space-8) * 2.75);
+  overflow: hidden;
 }
 
-.hero-figure {
-  margin: 0 0 var(--space-7);
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  display: block;
 }
 
-.hero-figure .torn img {
-  aspect-ratio: 16 / 9;
-  min-height: 260px;
+.hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Keeps the child and the gap in the ridge in frame at any aspect. */
+  object-position: center;
+  background: #101a26;
+}
+
+/* Centred type lands on the brightest part of the frame — the gap in the
+   ridge — so the first scrim is an ellipse sitting exactly over that glow.
+   The other two lift the foot of the frame and keep the bar legible. */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+      ellipse 70% 60% at 50% 48%,
+      rgba(var(--scrim), 0.62) 0%,
+      rgba(var(--scrim), 0.44) 55%,
+      rgba(var(--scrim), 0.12) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(var(--scrim), 0.62) 0%,
+      rgba(var(--scrim), 0.2) 28%,
+      rgba(var(--scrim), 0) 55%
+    ),
+    linear-gradient(to bottom, rgba(var(--scrim), 0.5) 0%, rgba(var(--scrim), 0) 18%);
 }
 
 .hero-copy {
-  max-width: 780px;
+  position: relative;
+  width: 100%;
+  max-width: var(--page);
+  margin: 0 auto;
+  color: var(--hero-ink);
+  text-align: center;
+}
+
+.hero-copy .eyebrow {
+  color: var(--hero-accent);
+  text-shadow: 0 1px 12px rgba(var(--scrim), 0.6);
+}
+
+/* Wide enough that the two hard breaks are the only breaks that land. */
+.hero-copy h1 {
+  max-width: 28ch;
+  margin-inline: auto;
+  text-shadow: 0 1px 24px rgba(var(--scrim), 0.5);
+  text-wrap: balance;
+}
+
+.hero-copy .ctas {
+  justify-content: center;
+}
+
+/* On the photograph the quiet button borrows the inverted ink. */
+.hero .btn-quiet {
+  color: var(--hero-ink);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55);
+}
+
+.hero .btn-quiet:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .eyebrow {
@@ -266,13 +379,6 @@ h1 {
   line-height: 1.04;
   letter-spacing: -0.02em;
   margin: 0 0 var(--space-5);
-}
-
-.lede {
-  color: var(--ink-muted);
-  font-size: clamp(17px, 2.1vw, 20px);
-  max-width: 52ch;
-  margin: 0 0 var(--space-6);
 }
 
 .ctas {
@@ -347,6 +453,13 @@ h1 {
   max-width: var(--measure);
 }
 
+/* .split-copy p / .wide-copy p outrank .footnote on specificity and would
+   otherwise strip the space above a closing note. */
+.split-copy .footnote,
+.wide-copy .footnote {
+  margin: var(--space-5) 0 0;
+}
+
 /* ──────────────────────────────────────────────────── Split image blocks */
 
 .split {
@@ -368,8 +481,16 @@ h1 {
   margin: 0;
 }
 
-.frame .torn img {
+.frame .media img {
   aspect-ratio: 4 / 3;
+}
+
+/* The corridor frame takes the same 4:3 box as the others, which crops a quarter
+   of the width off a 16:9 photograph. The children on the verge sit in its left
+   third, so the window is pulled left instead of centred, which would clip them;
+   what goes instead is empty roadway on the right. */
+.frame-corridor .media img {
+  object-position: 20% center;
 }
 
 .split-copy h2,
@@ -493,11 +614,13 @@ h1 {
   font-weight: 600;
 }
 
+/* Values carry words as well as numbers now, so they wrap rather than
+   pushing the row wider than its column. */
 .states b {
   color: var(--ink-muted);
   font-weight: 500;
   font-size: 14px;
-  white-space: nowrap;
+  text-align: right;
 }
 
 /* ───────────────────────────────────────────────────────── Wide feature */
@@ -509,7 +632,7 @@ h1 {
   border-top: 1px solid var(--hairline);
 }
 
-.frame-wide .torn img {
+.frame-wide .media img {
   aspect-ratio: 12 / 5;
   min-height: 240px;
 }
@@ -629,6 +752,30 @@ h1 {
     display: none;
   }
 
+  /* Too narrow for the desktop break to land where it was placed, so the
+     hard break is dropped and text-wrap: balance sets the lines. */
+  .hero-copy h1 br {
+    display: none;
+  }
+
+  /* The cover crop pushes the glow across most of a narrow frame, so the
+     ellipse widens and deepens rather than staying centred and small. */
+  .hero::after {
+    background: radial-gradient(
+        ellipse 110% 55% at 50% 46%,
+        rgba(var(--scrim), 0.72) 0%,
+        rgba(var(--scrim), 0.54) 60%,
+        rgba(var(--scrim), 0.2) 100%
+      ),
+      linear-gradient(
+        to top,
+        rgba(var(--scrim), 0.66) 0%,
+        rgba(var(--scrim), 0.24) 30%,
+        rgba(var(--scrim), 0) 58%
+      ),
+      linear-gradient(to bottom, rgba(var(--scrim), 0.5) 0%, rgba(var(--scrim), 0) 18%);
+  }
+
   .split {
     grid-template-columns: 1fr;
   }
@@ -652,6 +799,18 @@ h1 {
     margin-left: auto;
   }
 
+  /* The bar is one nowrap line at 320px, so the mark gives back the width it
+     takes: smaller flame, smaller type, tighter lockup. */
+  .bar .wordmark {
+    font-size: 17px;
+  }
+
+  .bar .wordmark img {
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+  }
+
   .hero,
   .stats,
   .split,
@@ -663,13 +822,6 @@ h1 {
 
   .foot {
     padding-inline: var(--space-4);
-  }
-
-  /* The torn displacement is proportionally far more violent on a narrow
-     image, so it eases off rather than shredding the frame. */
-  .torn {
-    filter: url(#torn-soft);
-    padding: 10px;
   }
 }
 
