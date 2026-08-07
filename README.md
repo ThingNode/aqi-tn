@@ -1,5 +1,9 @@
 # aqi.thingsnode
 
+**Live at [aqi.thingsnode.cc](https://aqi.thingsnode.cc)** — landing page at `/`,
+the application at [`/app`](https://aqi.thingsnode.cc/app/), and the public read-only
+API at [`/api/v1`](https://aqi.thingsnode.cc/api/v1/docs).
+
 An open-source, child-health-focused air-quality platform for Sri Lanka. All 15
 registry stations are commissioned and publishing live telemetry; the platform
 runs in `DATA_MODE=live`. The simulator remains available for local development
