@@ -1,96 +1,687 @@
-/* Placeholder landing page. Reuses the palette from apps/web/src/styles/tokens.css
- * (duplicated, not imported — the two apps deploy independently). */
+/* aqi.thingsnode — landing page
+ * Tokens mirror AQI ThingsNode Design Direction/tokens.css. Duplicated rather
+ * than imported: the site and the app deploy independently.
+ *
+ * Two rules from the design plan are load-bearing here:
+ *   1. AQI band colour appears ONLY on data marks, never on chrome, and never
+ *      without its band name in text alongside it.
+ *   2. Every band fill carries a 1px edge of its own hue darkened toward ink,
+ *      because the pale bands are invisible on cream without it.
+ */
 
 :root {
-  --cornsilk: #FEFAE0;
-  --light-bronze: #D4A373;
-  --bronze-text: #A9702F;
-  --ink: #3A342B;
-  --ink-muted: #6E6555;
-  --hairline: #E4DCC4;
+  /* Platform */
+  --cornsilk: #fefae0;
+  --papaya-whip: #faedcd;
+  --beige: #e9edc9;
+  --tea-green: #ccd5ae;
+  --light-bronze: #d4a373;
+  --bronze-text: #a9702f;
+
+  /* Derived neutrals */
+  --ink: #3a342b;
+  --ink-muted: #6e6555;
+  --ink-faint: #a99f8c; /* non-text: rules, ticks, unfilled marks only */
+  --hairline: #e4dcc4;
+
+  /* AQI scale — data only */
+  --aqi-good: #8ebd96;
+  --aqi-moderate: #d8dc82;
+  --aqi-slightly-unhealthy: #fed665;
+  --aqi-unhealthy: #fa9d45;
+  --aqi-very-unhealthy: #e76e6b;
+  --aqi-hazardous: #9a5d7c;
+  --aqi-good-edge: #5e8c68;
+  --aqi-moderate-edge: #8e9346;
+  --aqi-slightly-unhealthy-edge: #a88322;
+  --aqi-unhealthy-edge: #b5651a;
+  --aqi-very-unhealthy-edge: #a83f3c;
+  --aqi-hazardous-edge: #6b3a52;
+
+  /* Type — weight floor is 400, and 400 is running text only */
+  --font-primary: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  --label-tracking: 0.06em;
+
+  /* Space / radius / elevation */
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
   --radius-full: 999px;
-  --font-primary: 'Nunito', system-ui, sans-serif;
+  --elev-1: 0 1px 2px rgba(90, 74, 48, 0.06), 0 2px 8px rgba(90, 74, 48, 0.05);
+  --elev-2: 0 2px 4px rgba(90, 74, 48, 0.07), 0 8px 24px rgba(90, 74, 48, 0.08);
+  --elev-3: 0 4px 8px rgba(90, 74, 48, 0.08), 0 16px 48px rgba(90, 74, 48, 0.1);
+
+  --dur-hover: 160ms;
+  --ease-hover: ease-out;
+  --measure: 60ch;
+  --page: 1180px;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
   background: var(--cornsilk);
   color: var(--ink);
-  font: 400 17px/1.6 var(--font-primary);
+  font: 400 17px/1.62 var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+
+  /* The faint plotting grid behind everything, per the reference frames.
+     Kept under 3% alpha so it reads as paper, not as a chart. */
+  background-image: linear-gradient(rgba(169, 159, 140, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(169, 159, 140, 0.16) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 
+.filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--light-bronze);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────── Header */
+
 .bar {
-  padding: 24px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  background: rgba(254, 250, 224, 0.88);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--hairline);
 }
 
 .wordmark {
   font-weight: 800;
+  font-size: 19px;
   letter-spacing: -0.02em;
-  font-size: 18px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.hero {
-  flex: 1;
+.wordmark span {
+  color: var(--bronze-text);
+}
+
+.nav {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 48px 32px;
+  gap: var(--space-5);
+  margin-left: auto;
+}
+
+.nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: color var(--dur-hover) var(--ease-hover);
+}
+
+.nav a:hover {
+  color: var(--ink);
+}
+
+/* ────────────────────────────────────────────────────────────── Buttons */
+
+.btn {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  padding: 13px 26px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  transition: transform var(--dur-hover) var(--ease-hover),
+    filter var(--dur-hover) var(--ease-hover);
+}
+
+.btn-primary {
+  background: var(--light-bronze);
+  color: #fff;
+  box-shadow: var(--elev-1);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
+.btn-quiet {
+  color: var(--bronze-text);
+  box-shadow: inset 0 0 0 1.5px var(--tea-green);
+}
+
+.btn-quiet:hover {
+  background: var(--papaya-whip);
+}
+
+.bar .btn {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+/* ───────────────────────────────────────────────── Torn-paper image frame */
+
+/* The displacement filter eats into the element's bounds, so the padding
+   here is what stops the torn edge being clipped by its own box. */
+.torn {
+  filter: url(#torn);
+  padding: 14px;
+}
+
+.torn-soft {
+  filter: url(#torn-soft);
+}
+
+.torn picture {
+  display: block;
+}
+
+.torn img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Visible even before the real image lands, so layout can be judged. */
+  background: linear-gradient(150deg, var(--papaya-whip), var(--tea-green));
+  min-height: 220px;
+}
+
+/* Safari/older engines that drop SVG filters still get a clean frame. */
+@supports not (filter: url(#torn)) {
+  .torn {
+    filter: none;
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    box-shadow: var(--elev-2);
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────── Hero */
+
+.hero {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-8);
+}
+
+.hero-figure {
+  margin: 0 0 var(--space-7);
+}
+
+.hero-figure .torn img {
+  aspect-ratio: 16 / 9;
+  min-height: 260px;
+}
+
+.hero-copy {
+  max-width: 780px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--bronze-text);
+  margin: 0 0 var(--space-3);
 }
 
 h1 {
   font-weight: 800;
-  font-size: 40px;
-  line-height: 1.15;
-  margin: 0 0 20px;
+  font-size: clamp(38px, 7vw, 68px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-5);
 }
 
 .lede {
   color: var(--ink-muted);
-  font-size: 17px;
-  margin: 0 0 32px;
-  max-width: 46ch;
+  font-size: clamp(17px, 2.1vw, 20px);
+  max-width: 52ch;
+  margin: 0 0 var(--space-6);
 }
 
 .ctas {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
-.btn-primary {
-  display: inline-block;
-  background: var(--light-bronze);
-  color: var(--cornsilk);
-  text-decoration: none;
+/* ──────────────────────────────────────────────────────────────── Stats */
+
+.section-h {
+  font-size: 12px;
   font-weight: 600;
-  padding: 14px 28px;
-  border-radius: var(--radius-full);
-}
-
-.btn-primary:hover {
-  filter: brightness(0.96);
-}
-
-.foot {
-  padding: 24px 32px;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
   color: var(--ink-muted);
-  font-size: 13px;
+  margin: 0 0 var(--space-6);
+}
+
+.stats {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
   border-top: 1px solid var(--hairline);
 }
 
-.foot p {
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-6);
+}
+
+.stat {
+  background: var(--papaya-whip);
+  border-radius: var(--radius-m);
+  padding: var(--space-6);
+  box-shadow: var(--elev-1);
+}
+
+.stat strong {
+  display: block;
+  font-size: clamp(48px, 6vw, 64px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-3);
+}
+
+.stat .unit {
+  font-size: 0.5em;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.stat p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 15px;
+  max-width: 30ch;
+}
+
+.stat em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.footnote {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  max-width: var(--measure);
+}
+
+/* ──────────────────────────────────────────────────── Split image blocks */
+
+.split {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(var(--space-6), 5vw, var(--space-8));
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+}
+
+.split.reverse .frame {
+  order: 2;
+}
+
+.frame {
   margin: 0;
 }
 
-@media (min-width: 720px) {
-  h1 { font-size: 56px; }
+.frame .torn img {
+  aspect-ratio: 4 / 3;
+}
+
+.split-copy h2,
+.wide-copy h2 {
+  font-weight: 700;
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-4);
+}
+
+.split-copy p,
+.wide-copy p {
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-5);
+  max-width: 46ch;
+}
+
+.ticks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ticks li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ticks li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 12px;
+  height: 2px;
+  background: var(--light-bronze);
+}
+
+/* ─────────────────────────────────────────────────────────── Band scale */
+
+.scale-band {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  border-top: 1px solid var(--hairline);
+}
+
+.bands {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: var(--space-4);
+  /* Band-coloured data always sits on a papaya-whip card, never on cornsilk. */
+  background: var(--papaya-whip);
+  border-radius: var(--radius-m);
+  box-shadow: var(--elev-1);
+}
+
+.bands li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'swatch name' 'swatch range';
+  column-gap: var(--space-3);
+  align-items: center;
+}
+
+.bands i {
+  grid-area: swatch;
+  width: 14px;
+  height: 34px;
+  border-radius: 3px;
+  background: var(--b);
+  box-shadow: inset 0 0 0 1px var(--e);
+}
+
+.bands b {
+  grid-area: name;
+  font-size: 14px;
+  font-weight: 700;
+  align-self: end;
+}
+
+.bands span {
+  grid-area: range;
+  font-size: 12px;
+  color: var(--ink-muted);
+  align-self: start;
+}
+
+/* ─────────────────────────────────────────────────── School advisory list */
+
+.states {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  counter-reset: state;
+}
+
+.states li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 15px;
+}
+
+.states li:last-child {
+  border-bottom: 0;
+}
+
+.states span {
+  font-weight: 600;
+}
+
+.states b {
+  color: var(--ink-muted);
+  font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ───────────────────────────────────────────────────────── Wide feature */
+
+.wide {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  border-top: 1px solid var(--hairline);
+}
+
+.frame-wide .torn img {
+  aspect-ratio: 12 / 5;
+  min-height: 240px;
+}
+
+.wide-copy {
+  max-width: 620px;
+  margin-top: var(--space-7);
+}
+
+/* ────────────────────────────────────────────────────────────────── Open */
+
+.open {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  border-top: 1px solid var(--hairline);
+}
+
+.open-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--space-5);
+}
+
+.open-grid article {
+  background: var(--beige);
+  border-radius: var(--radius-m);
+  padding: var(--space-5);
+}
+
+.open-grid h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.open-grid p:last-child {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.endpoints {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-5);
+  background: var(--papaya-whip);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-m);
+  overflow-x: auto;
+  font: 500 13px/1.9 var(--font-mono);
+  color: var(--ink-muted);
+}
+
+.endpoints code {
+  white-space: pre;
+}
+
+/* ──────────────────────────────────────────────────────────────── Footer */
+
+.foot {
+  background: var(--beige);
+  border-top: 1px solid var(--hairline);
+  padding: var(--space-8) var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.foot-top,
+.foot-links,
+.foot-fine {
+  max-width: var(--page);
+  margin-inline: auto;
+}
+
+.foot-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.foot-top p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.foot-links a {
+  color: var(--bronze-text);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.foot-links a:hover {
+  text-decoration: underline;
+}
+
+.foot-fine {
+  margin-top: var(--space-6);
+  color: var(--ink-muted);
+  font-size: 13px;
+  max-width: var(--measure);
+}
+
+/* ────────────────────────────────────────────────────────────── Responsive */
+
+@media (max-width: 860px) {
+  .nav {
+    display: none;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .split.reverse .frame {
+    order: 0;
+  }
+
+  .wide-copy {
+    margin-top: var(--space-6);
+  }
+}
+
+@media (max-width: 560px) {
+  .bar {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .bar .btn {
+    margin-left: auto;
+  }
+
+  .hero,
+  .stats,
+  .split,
+  .scale-band,
+  .wide,
+  .open {
+    padding-inline: var(--space-4);
+  }
+
+  .foot {
+    padding-inline: var(--space-4);
+  }
+
+  /* The torn displacement is proportionally far more violent on a narrow
+     image, so it eases off rather than shredding the frame. */
+  .torn {
+    filter: url(#torn-soft);
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
