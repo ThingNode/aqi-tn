@@ -1,3 +1,3 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({ base: '/', build: { assetsDir: 'site-assets' } });
+export default defineConfig({ base: '/' });

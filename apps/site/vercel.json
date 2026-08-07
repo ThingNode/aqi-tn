@@ -1,8 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/assets/:path*", "destination": "https://aqi-tn-web.vercel.app/assets/:path*" },
-    { "source": "/app", "destination": "https://aqi-tn-web.vercel.app/" },
-    { "source": "/app/:path*", "destination": "https://aqi-tn-web.vercel.app/:path*" }
-  ]
-}
